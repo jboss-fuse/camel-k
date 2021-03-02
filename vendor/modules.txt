@@ -205,13 +205,14 @@ github.com/openshift/api/pkg/serialization
 github.com/openshift/api/project/v1
 github.com/openshift/api/route/v1
 github.com/openshift/api/template/v1
+# github.com/operator-framework/api v0.3.12
+github.com/operator-framework/api/pkg/lib/version
+github.com/operator-framework/api/pkg/operators
+github.com/operator-framework/api/pkg/operators/v1
+github.com/operator-framework/api/pkg/operators/v1alpha1
+github.com/operator-framework/api/pkg/operators/v1alpha2
 # github.com/operator-framework/operator-lib v0.1.0
 github.com/operator-framework/operator-lib/leader
-# github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200321030439-57b580e57e88
-github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators
-github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1
-github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1
-github.com/operator-framework/operator-lifecycle-manager/pkg/lib/version
 # github.com/pelletier/go-toml v1.8.0
 github.com/pelletier/go-toml
 # github.com/peterbourgon/diskv v2.0.1+incompatible

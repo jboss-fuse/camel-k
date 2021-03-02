@@ -1,4 +1,4 @@
-package v1
+package v1alpha2
 
 import (
 	"sort"
@@ -26,7 +26,6 @@ type OperatorGroupSpec struct {
 	// TargetNamespaces is an explicit set of namespaces to target.
 	// If it is set, Selector is ignored.
 	// +optional
-	// +listType=set
 	TargetNamespaces []string `json:"targetNamespaces,omitempty"`
 
 	// ServiceAccountName is the admin specified service account which will be
@@ -41,7 +40,6 @@ type OperatorGroupSpec struct {
 // OperatorGroupStatus is the status for an OperatorGroupResource.
 type OperatorGroupStatus struct {
 	// Namespaces is the set of target namespaces for the OperatorGroup.
-	// +listType=set
 	Namespaces []string `json:"namespaces,omitempty"`
 
 	// ServiceAccountRef references the service account object specified.
@@ -53,6 +51,8 @@ type OperatorGroupStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +genclient
+// +kubebuilder:resource:shortName=og,categories=olm
+// +kubebuilder:subresource:status
 
 // OperatorGroup is the unit of multitenancy for OLM managed operators.
 // It constrains the installation of operators in its namespace to a specified set of target namespaces.
@@ -71,15 +71,13 @@ type OperatorGroup struct {
 type OperatorGroupList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-	// +listType=set
+
 	Items []OperatorGroup `json:"items"`
 }
 
 func (o *OperatorGroup) BuildTargetNamespaces() string {
-	ns := make([]string, len(o.Status.Namespaces))
-	copy(ns, o.Status.Namespaces)
-	sort.Strings(ns)
-	return strings.Join(ns, ",")
+	sort.Strings(o.Status.Namespaces)
+	return strings.Join(o.Status.Namespaces, ",")
 }
 
 // IsServiceAccountSpecified returns true if the spec has a service account name specified.
