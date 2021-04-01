@@ -18,32 +18,30 @@ limitations under the License.
 package camel
 
 import (
-	"sort"
-
-	"github.com/Masterminds/semver"
 	"github.com/apache/camel-k/pkg/apis/camel/v1alpha1"
 	"github.com/apache/camel-k/pkg/util/log"
+	"github.com/blang/semver"
 )
 
 // FindBestMatch --
 func FindBestMatch(version string, catalogs []v1alpha1.CamelCatalog) (*RuntimeCatalog, error) {
-	constraint, err := semver.NewConstraint(version)
 
+	parseRange, err := semver.ParseRange(version)
 	//
 	// if the version is not a constraint, use exact match
 	//
-	if err != nil || constraint == nil {
+	if err != nil || parseRange == nil {
 		if err != nil {
 			log.Debug("Unable to parse constraint: %s, error:\n", version, err.Error())
 		}
-		if constraint == nil {
+		if parseRange == nil {
 			log.Debug("Unable to parse constraint: %s\n", version)
 		}
 
 		return FindExactMatch(version, catalogs)
 	}
 
-	return FindBestSemVerMatch(constraint, catalogs)
+	return FindBestSemVerMatch(version, catalogs)
 }
 
 // FindExactMatch --
@@ -57,12 +55,20 @@ func FindExactMatch(version string, catalogs []v1alpha1.CamelCatalog) (*RuntimeC
 	return nil, nil
 }
 
+func reverse(versions []semver.Version) []semver.Version {
+	newVersions := make([]semver.Version, 0, len(versions))
+	for i := len(versions) - 1; i >= 0; i-- {
+		newVersions = append(newVersions, versions[i])
+	}
+	return newVersions
+}
+
 // FindBestSemVerMatch --
-func FindBestSemVerMatch(constraint *semver.Constraints, catalogs []v1alpha1.CamelCatalog) (*RuntimeCatalog, error) {
-	versions := make([]*semver.Version, 0)
+func FindBestSemVerMatch(constraint string, catalogs []v1alpha1.CamelCatalog) (*RuntimeCatalog, error) {
+	versions := make([]semver.Version, 0)
 
 	for _, catalog := range catalogs {
-		v, err := semver.NewVersion(catalog.Spec.Version)
+		v, err := semver.Parse(catalog.Spec.Version)
 		if err != nil {
 			log.Debugf("Invalid semver version %s, skip it", catalog.Spec.Version)
 			continue
@@ -71,20 +77,23 @@ func FindBestSemVerMatch(constraint *semver.Constraints, catalogs []v1alpha1.Cam
 		versions = append(versions, v)
 	}
 
-	sort.Sort(
-		sort.Reverse(semver.Collection(versions)),
-	)
+	semver.Sort(versions)
+	reversedVersions := reverse(versions)
 
-	for _, v := range versions {
+	for _, v := range reversedVersions {
 		ver := v
+		constraintRange, err := semver.ParseRange(constraint)
+		if err != nil {
+			log.Debugf("Could not parse range \"%s\"", constraint)
+			continue
+		}
 
-		if constraint.Check(ver) {
+		if constraintRange(ver) {
 			for _, catalog := range catalogs {
-				if catalog.Spec.Version == ver.Original() {
+				if catalog.Spec.Version == ver.String() {
 					return NewRuntimeCatalog(catalog.Spec), nil
 				}
 			}
-
 		}
 	}
 

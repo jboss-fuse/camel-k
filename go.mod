@@ -6,6 +6,8 @@ require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/alecthomas/jsonschema v0.0.0-20190122210438-a6952de1bbe6
 	github.com/appscode/jsonpatch v0.0.0-20190108182946-7c0e3b262f30 // indirect
+	github.com/blang/semver v3.5.1+incompatible // indirect
+	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/coreos/prometheus-operator v0.27.0
 	github.com/emicklei/go-restful v2.9.0+incompatible // indirect
 	github.com/evanphx/json-patch v4.1.0+incompatible // indirect
