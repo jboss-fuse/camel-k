@@ -24,9 +24,10 @@ import (
 
 // ConfigurationSpec --
 type ConfigurationSpec struct {
-	Type         string `json:"type"`
-	Value        string `json:"value"`
-	ResourceType string `json:"resourceType,omitempty"`
+	Type               string `json:"type"`
+	Value              string `json:"value"`
+	ResourceType       string `json:"resourceType,omitempty"`
+	ResourceMountPoint string `json:"resourceMountPoint,omitempty"`
 }
 
 // Artifact --
@@ -222,6 +223,7 @@ const (
 // DataSpec --
 type DataSpec struct {
 	Name        string `json:"name,omitempty"`
+	Path        string `json:"path,omitempty"`
 	Content     string `json:"content,omitempty"`
 	RawContent  []byte `json:"rawContent,omitempty"`
 	ContentRef  string `json:"contentRef,omitempty"`
