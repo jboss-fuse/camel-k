@@ -24,8 +24,11 @@ import (
 
 // ConfigurationSpec --
 type ConfigurationSpec struct {
-	Type  string `json:"type"`
-	Value string `json:"value"`
+	Type               string `json:"type"`
+	Value              string `json:"value"`
+	ResourceType       string `json:"resourceType,omitempty"`
+	ResourceMountPoint string `json:"resourceMountPoint,omitempty"`
+	ResourceKey        string `json:"resourceKey,omitempty"`
 }
 
 // Artifact --
@@ -186,9 +189,11 @@ type ResourceSpec struct {
 }
 
 const (
-	// ResourceTypeData --
+	// ResourceTypeData represents a generic data resource
 	ResourceTypeData ResourceType = "data"
-	// ResourceTypeOpenAPI --
+	// ResourceTypeConfig represents a config resource known to runtime
+	ResourceTypeConfig ResourceType = "config"
+	// ResourceTypeOpenAPI represents an OpenAPI config resource
 	ResourceTypeOpenAPI ResourceType = "openapi"
 )
 
@@ -219,6 +224,7 @@ const (
 // DataSpec --
 type DataSpec struct {
 	Name        string `json:"name,omitempty"`
+	Path        string `json:"path,omitempty"`
 	Content     string `json:"content,omitempty"`
 	RawContent  []byte `json:"rawContent,omitempty"`
 	ContentRef  string `json:"contentRef,omitempty"`
