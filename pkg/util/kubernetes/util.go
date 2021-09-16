@@ -21,7 +21,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/json"
 
+	v1 "github.com/apache/camel-k/pkg/apis/camel/v1"
 	"github.com/apache/camel-k/pkg/util"
+	"github.com/apache/camel-k/pkg/util/defaults"
 )
 
 // ToJSON marshal to json format
@@ -37,4 +39,18 @@ func ToYAML(value runtime.Object) ([]byte, error) {
 	}
 
 	return util.JSONToYAML(data)
+}
+
+func MeteringLabels(integration string) map[string]string {
+	var labels = map[string]string{
+		v1.IntegrationLabel: integration,
+		"com.company":       "Red_Hat",
+		"rht.prod_name":     "Red_Hat_Integration",
+		"rht.prod_ver":      defaults.RHIntegrationVersion,
+		"rht.comp":          "Camel-K",
+		"rht.comp_ver":      defaults.Version,
+		"rht.subcomp":       integration,
+		"rht.subcomp_t":     "application",
+	}
+	return labels
 }

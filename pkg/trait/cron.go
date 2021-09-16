@@ -292,7 +292,7 @@ func (t *cronTrait) getCronJobFor(e *Environment) *v1beta1.CronJob {
 				Spec: batchv1.JobSpec{
 					Template: corev1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Labels:      labels,
+							Labels:      kubernetes.MeteringLabels(e.Integration.Name),
 							Annotations: annotations,
 						},
 						Spec: corev1.PodSpec{

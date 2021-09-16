@@ -30,6 +30,9 @@ GIT_COMMIT := $(shell git rev-list -1 HEAD)
 LINT_GOGC := 10
 LINT_DEADLINE := 10m
 
+# Red Hat Integration version, used to set the metering labels.
+RH_INTEGRATION_PRODUCT_VERSION := 2021.Q4
+
 # Used to push pre-release artifacts
 STAGING_IMAGE_NAME := docker.io/camelk/camel-k
 
@@ -120,6 +123,9 @@ codegen:
 	@echo "" >> $(VERSIONFILE)
 	@echo "  // installDefaultKamelets -- " >> $(VERSIONFILE)
 	@echo "  installDefaultKamelets = $(INSTALL_DEFAULT_KAMELETS)" >> $(VERSIONFILE)
+	@echo "" >> $(VERSIONFILE)
+	@echo "  // RHIntegrationVersion -- " >> $(VERSIONFILE)
+	@echo "  RHIntegrationVersion = \"$(RH_INTEGRATION_PRODUCT_VERSION)\"" >> $(VERSIONFILE)
 	@echo ")" >> $(VERSIONFILE)
 	@echo "" >> $(VERSIONFILE)
 	gofmt -w pkg/util/defaults/defaults.go
@@ -147,6 +153,9 @@ generate-strimzi:
 	./script/gen_client_strimzi.sh
 
 build: build-resources build-kamel build-compile-integration-tests build-submodules
+
+adjust-metering-labels:
+	./script/adjust_metering_labels.sh
 
 test: build
 	go test ./...
@@ -298,13 +307,13 @@ package-examples:
 package-artifacts:
 	./script/package_maven_artifacts.sh $(RUNTIME_VERSION) $(PACKAGE_ARTIFACTS_STRATEGY) $(STAGING_RUNTIME_REPO)
 
-release: clean codegen set-module-version set-version build-resources check-licenses build images images-push cross-compile package-examples git-tag
+release: clean codegen adjust-metering-labels set-module-version set-version build-resources check-licenses build images images-push cross-compile package-examples git-tag
 
-release-staging: clean codegen set-module-version set-version build-resources check-licenses build images images-push-staging cross-compile package-examples git-tag
+release-staging: clean codegen adjust-metering-labels set-module-version set-version build-resources check-licenses build images images-push-staging cross-compile package-examples git-tag
 
-release-nightly: clean codegen set-module-version set-version build-resources build images images-push cross-compile package-examples
+release-nightly: clean codegen adjust-metering-labels set-module-version set-version build-resources build images images-push cross-compile package-examples
 
-release-helm:
+release-helm: adjust-metering-labels
 	./script/release_helm.sh
 
 install-crc:
@@ -315,7 +324,7 @@ install-minikube:
 get-staging-repo:
 	@echo $(or ${STAGING_RUNTIME_REPO},https://repository.apache.org/content/repositories/snapshots@id=apache-snapshots@snapshots)
 
-.PHONY: build build-kamel build-resources dep codegen images images-dev images-push images-push-staging test check test-integration clean release cross-compile package-examples set-version git-tag release-notes check-licenses generate-deepcopy generate-client generate-doc build-resources release-helm release-staging release-nightly get-staging-repo get-version build-submodules set-module-version bundle-kamelets generate-strimzi
+.PHONY: build build-kamel build-resources dep codegen images images-dev images-push images-push-staging test check test-integration clean release cross-compile package-examples set-version git-tag release-notes check-licenses generate-deepcopy generate-client generate-doc build-resources release-helm release-staging release-nightly get-staging-repo get-version build-submodules set-module-version bundle-kamelets generate-strimzi adjust-metering-labels
 
 # find or download controller-gen if necessary
 controller-gen:

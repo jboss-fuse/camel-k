@@ -45,4 +45,7 @@ const (
 
 	// installDefaultKamelets --
 	installDefaultKamelets = true
+
+	// RHIntegrationVersion --
+	RHIntegrationVersion = "2021.Q4"
 )

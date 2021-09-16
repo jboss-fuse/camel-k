@@ -35,6 +35,13 @@ spec:
         name: camel-k-operator
         camel.apache.org/component: operator
         app: "camel-k"
+        com.company: Red_Hat
+        rht.prod_name: Red_Hat_Integration
+        rht.prod_ver: 2021.Q4
+        rht.comp: Camel-K
+        rht.comp_ver: 1.6.0
+        rht.subcomp: camel-k-operator
+        rht.subcomp_t: infrastructure
     spec:
       serviceAccountName: camel-k-operator
       containers:

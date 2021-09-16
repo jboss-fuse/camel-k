@@ -310,7 +310,7 @@ func (t *knativeServiceTrait) getServiceFor(e *Environment) *serving.Service {
 			ConfigurationSpec: serving.ConfigurationSpec{
 				Template: serving.RevisionTemplateSpec{
 					ObjectMeta: metav1.ObjectMeta{
-						Labels:      labels,
+						Labels:      kubernetes.MeteringLabels(e.Integration.Name),
 						Annotations: annotations,
 					},
 					Spec: serving.RevisionSpec{
