@@ -103,7 +103,7 @@ func (t *knativeServiceTrait) Configure(e *Environment) (bool, error) {
 		return false, nil
 	}
 
-	if !e.InPhase(v1.IntegrationKitPhaseReady, v1.IntegrationPhaseDeploying) && !e.IntegrationInPhase(v1.IntegrationPhaseRunning) {
+	if !e.IntegrationInRunningPhases() {
 		return false, nil
 	}
 
@@ -162,7 +162,7 @@ func (t *knativeServiceTrait) Configure(e *Environment) (bool, error) {
 		}
 	}
 
-	if e.IntegrationInPhase(v1.IntegrationPhaseRunning) {
+	if e.IntegrationInPhase(v1.IntegrationPhaseRunning, v1.IntegrationPhaseError) {
 		condition := e.Integration.Status.GetCondition(v1.IntegrationConditionKnativeServiceAvailable)
 		return condition != nil && condition.Status == corev1.ConditionTrue, nil
 	}
@@ -171,7 +171,10 @@ func (t *knativeServiceTrait) Configure(e *Environment) (bool, error) {
 }
 
 func (t *knativeServiceTrait) Apply(e *Environment) error {
-	ksvc := t.getServiceFor(e)
+	ksvc, err := t.getServiceFor(e)
+	if err != nil {
+		return err
+	}
 	maps := e.computeConfigMaps()
 
 	e.Resources.AddAll(maps)
@@ -183,56 +186,6 @@ func (t *knativeServiceTrait) Apply(e *Environment) error {
 		v1.IntegrationConditionKnativeServiceAvailableReason,
 		fmt.Sprintf("Knative service name is %s", ksvc.Name),
 	)
-
-	if e.IntegrationInPhase(v1.IntegrationPhaseRunning) {
-		replicas := e.Integration.Spec.Replicas
-
-		isUpdateRequired := false
-		minScale, ok := ksvc.Spec.Template.Annotations[knativeServingMinScaleAnnotation]
-		if ok {
-			min, err := strconv.Atoi(minScale)
-			if err != nil {
-				return err
-			}
-			if replicas == nil || min != int(*replicas) {
-				isUpdateRequired = true
-			}
-		} else if replicas != nil {
-			isUpdateRequired = true
-		}
-
-		maxScale, ok := ksvc.Spec.Template.Annotations[knativeServingMaxScaleAnnotation]
-		if ok {
-			max, err := strconv.Atoi(maxScale)
-			if err != nil {
-				return err
-			}
-			if replicas == nil || max != int(*replicas) {
-				isUpdateRequired = true
-			}
-		} else if replicas != nil {
-			isUpdateRequired = true
-		}
-
-		if isUpdateRequired {
-			if replicas == nil {
-				if t.MinScale != nil && *t.MinScale > 0 {
-					ksvc.Spec.Template.Annotations[knativeServingMinScaleAnnotation] = strconv.Itoa(*t.MinScale)
-				} else {
-					delete(ksvc.Spec.Template.Annotations, knativeServingMinScaleAnnotation)
-				}
-				if t.MaxScale != nil && *t.MaxScale > 0 {
-					ksvc.Spec.Template.Annotations[knativeServingMaxScaleAnnotation] = strconv.Itoa(*t.MaxScale)
-				} else {
-					delete(ksvc.Spec.Template.Annotations, knativeServingMaxScaleAnnotation)
-				}
-			} else {
-				scale := strconv.Itoa(int(*replicas))
-				ksvc.Spec.Template.Annotations[knativeServingMinScaleAnnotation] = scale
-				ksvc.Spec.Template.Annotations[knativeServingMaxScaleAnnotation] = scale
-			}
-		}
-	}
 
 	return nil
 }
@@ -263,23 +216,16 @@ func (t *knativeServiceTrait) ControllerStrategySelectorOrder() int {
 	return 100
 }
 
-func (t *knativeServiceTrait) getServiceFor(e *Environment) *serving.Service {
-	labels := map[string]string{
-		v1.IntegrationLabel: e.Integration.Name,
-	}
-
-	annotations := make(map[string]string)
-
+func (t *knativeServiceTrait) getServiceFor(e *Environment) (*serving.Service, error) {
 	// Copy annotations from the integration resource
+	annotations := make(map[string]string)
 	if e.Integration.Annotations != nil {
 		for k, v := range filterTransferableAnnotations(e.Integration.Annotations) {
 			annotations[k] = v
 		}
 	}
 
-	//
-	// Set Knative Scaling behavior
-	//
+	// Set Knative auto-scaling behavior
 	if t.Class != "" {
 		annotations[knativeServingClassAnnotation] = t.Class
 	}
@@ -302,9 +248,11 @@ func (t *knativeServiceTrait) getServiceFor(e *Environment) *serving.Service {
 			APIVersion: serving.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        e.Integration.Name,
-			Namespace:   e.Integration.Namespace,
-			Labels:      labels,
+			Name:      e.Integration.Name,
+			Namespace: e.Integration.Namespace,
+			Labels: map[string]string{
+				v1.IntegrationLabel: e.Integration.Name,
+			},
 			Annotations: e.Integration.Annotations,
 		},
 		Spec: serving.ServiceSpec{
@@ -324,5 +272,53 @@ func (t *knativeServiceTrait) getServiceFor(e *Environment) *serving.Service {
 		},
 	}
 
-	return &svc
+	replicas := e.Integration.Spec.Replicas
+
+	isUpdateRequired := false
+	minScale, ok := svc.Spec.Template.Annotations[knativeServingMinScaleAnnotation]
+	if ok {
+		min, err := strconv.Atoi(minScale)
+		if err != nil {
+			return nil, err
+		}
+		if replicas == nil || min != int(*replicas) {
+			isUpdateRequired = true
+		}
+	} else if replicas != nil {
+		isUpdateRequired = true
+	}
+
+	maxScale, ok := svc.Spec.Template.Annotations[knativeServingMaxScaleAnnotation]
+	if ok {
+		max, err := strconv.Atoi(maxScale)
+		if err != nil {
+			return nil, err
+		}
+		if replicas == nil || max != int(*replicas) {
+			isUpdateRequired = true
+		}
+	} else if replicas != nil {
+		isUpdateRequired = true
+	}
+
+	if isUpdateRequired {
+		if replicas == nil {
+			if t.MinScale != nil && *t.MinScale > 0 {
+				svc.Spec.Template.Annotations[knativeServingMinScaleAnnotation] = strconv.Itoa(*t.MinScale)
+			} else {
+				delete(svc.Spec.Template.Annotations, knativeServingMinScaleAnnotation)
+			}
+			if t.MaxScale != nil && *t.MaxScale > 0 {
+				svc.Spec.Template.Annotations[knativeServingMaxScaleAnnotation] = strconv.Itoa(*t.MaxScale)
+			} else {
+				delete(svc.Spec.Template.Annotations, knativeServingMaxScaleAnnotation)
+			}
+		} else {
+			scale := strconv.Itoa(int(*replicas))
+			svc.Spec.Template.Annotations[knativeServingMinScaleAnnotation] = scale
+			svc.Spec.Template.Annotations[knativeServingMaxScaleAnnotation] = scale
+		}
+	}
+
+	return &svc, nil
 }

@@ -126,7 +126,7 @@ func (t *cronTrait) Configure(e *Environment) (bool, error) {
 		return false, nil
 	}
 
-	if !e.IntegrationInPhase(v1.IntegrationPhaseInitialization, v1.IntegrationPhaseDeploying) {
+	if !e.IntegrationInPhase(v1.IntegrationPhaseInitialization) && !e.IntegrationInRunningPhases() {
 		return false, nil
 	}
 
@@ -235,7 +235,7 @@ func (t *cronTrait) Apply(e *Environment) error {
 		}
 	}
 
-	if IsNilOrFalse(t.Fallback) && e.IntegrationInPhase(v1.IntegrationPhaseDeploying) {
+	if IsNilOrFalse(t.Fallback) && e.IntegrationInRunningPhases() {
 		if e.ApplicationProperties == nil {
 			e.ApplicationProperties = make(map[string]string)
 		}
@@ -261,13 +261,8 @@ func (t *cronTrait) Apply(e *Environment) error {
 }
 
 func (t *cronTrait) getCronJobFor(e *Environment) *v1beta1.CronJob {
-	labels := map[string]string{
-		v1.IntegrationLabel: e.Integration.Name,
-	}
-
-	annotations := make(map[string]string)
-
 	// Copy annotations from the integration resource
+	annotations := make(map[string]string)
 	if e.Integration.Annotations != nil {
 		for k, v := range filterTransferableAnnotations(e.Integration.Annotations) {
 			annotations[k] = v
@@ -280,9 +275,11 @@ func (t *cronTrait) getCronJobFor(e *Environment) *v1beta1.CronJob {
 			APIVersion: v1beta1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        e.Integration.Name,
-			Namespace:   e.Integration.Namespace,
-			Labels:      labels,
+			Name:      e.Integration.Name,
+			Namespace: e.Integration.Namespace,
+			Labels: map[string]string{
+				v1.IntegrationLabel: e.Integration.Name,
+			},
 			Annotations: e.Integration.Annotations,
 		},
 		Spec: v1beta1.CronJobSpec{
