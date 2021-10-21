@@ -37,6 +37,7 @@
 
     <properties>
         <version.camel-k.release>1.6.0</version.camel-k.release>
+        <rhi.version>2021.Q4</rhi.version>
         <base.image>registry.access.redhat.com/ubi8/openjdk-11:1.3</base.image>
         <image.name>registry.redhat.io/integration-tech-preview/camel-k-rhel8-operator</image.name>
 
@@ -173,6 +174,8 @@
                                     <executable>make</executable>
                                     <commandlineArgs>build-kamel</commandlineArgs>
                                     <environmentVariables>
+                                        <CAMEL_K_VERSION>${version.camel-k.release}</CAMEL_K_VERSION>
+                                        <RHI_VERSION>${rhi.version}</RHI_VERSION>
                                         <GO111MODULE>on</GO111MODULE>
                                     </environmentVariables>
                                 </configuration>
@@ -186,6 +189,10 @@
                                 <configuration>
                                     <executable>make</executable>
                                     <commandlineArgs>cross-compile VERSION=${version.camel-k.release}</commandlineArgs>
+                                     <environmentVariables>
+                                        <CAMEL_K_VERSION>${version.camel-k.release}</CAMEL_K_VERSION>
+                                        <RHI_VERSION>${rhi.version}</RHI_VERSION>
+                                    </environmentVariables>
                                 </configuration>
                             </execution>
                         </executions>
