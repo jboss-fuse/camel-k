@@ -26,6 +26,7 @@ metadata:
     createdAt: 1977-01-01T00:00:00Z
     description: Red Hat Integration - Camel K is a lightweight integration platform,
       born on Kubernetes, with serverless superpowers.
+    olm.skipRange: '>=1.6.7 <=1.6.8'
     operators.operatorframework.io/builder: operator-sdk-v1.3.0
     operators.operatorframework.io/internal-objects: '["builds.camel.apache.org","integrationkits.camel.apache.org","camelcatalogs.camel.apache.org"]'
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
@@ -154,7 +155,6 @@ spec:
   provider:
     name: Red Hat
     url: https://access.redhat.com/products/red-hat-integration
-  replaces: red-hat-camel-k-operator.vA.B.C
   selector:
     matchLabels:
       name: camel-k-operator

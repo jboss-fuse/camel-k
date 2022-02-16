@@ -14,8 +14,8 @@
 # limitations under the License.
 
 VERSIONFILE := pkg/util/defaults/defaults.go
-VERSION := 1.6.8
-LAST_RELEASED_VERSION := 1.6.7
+VERSION := 1.6.9
+LAST_RELEASED_VERSION := 1.6.8
 RHI_VERSION := 2022.Q2
 RUNTIME_VERSION := 1.9.0
 LAST_RELEASED_IMAGE_NAME := red-hat-camel-k-operator
@@ -59,6 +59,7 @@ CSV_NAME := $(PACKAGE).v$(CSV_VERSION)
 CSV_DISPLAY_NAME := Red Hat Integration - Camel K
 CSV_SUPPORT := Camel
 CSV_REPLACES := $(LAST_RELEASED_IMAGE_NAME).v$(LAST_RELEASED_VERSION)
+CSV_SKIPS := "'>=1.6.7 <=$(LAST_RELEASED_VERSION)'"
 CSV_FILENAME := $(PACKAGE).clusterserviceversion.yaml
 CSV_PATH := $(MANIFESTS)/bases/$(CSV_FILENAME)
 DEFAULT_CSV := $(MANIFESTS)/bases/camel-k.clusterserviceversion.yaml

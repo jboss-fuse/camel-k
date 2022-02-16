@@ -27,7 +27,7 @@
 
     <groupId>org.fuse.camel.k</groupId>
     <artifactId>camel-k-parent</artifactId>
-    <version>1.6.8-SNAPSHOT</version>
+    <version>1.6.9-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Fuse :: Camel-K Parent</name>
@@ -36,7 +36,7 @@
     <inceptionYear>2011</inceptionYear>
 
     <properties>
-        <version.camel-k.release>1.6.8</version.camel-k.release>
+        <version.camel-k.release>1.6.9</version.camel-k.release>
         <camel.version>3.11.5</camel.version>
         <camel-k-runtime.version>1.9.0</camel-k-runtime.version>
         <camel-quarkus.version>2.2.1</camel-quarkus.version>
