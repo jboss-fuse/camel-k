@@ -16,12 +16,13 @@
 VERSIONFILE := pkg/util/defaults/defaults.go
 VERSION := 1.6.4
 LAST_RELEASED_VERSION := 1.6.3
+RHI_VERSION := 2022Q3
 RUNTIME_VERSION := 1.9.0
 LAST_RELEASED_IMAGE_NAME := red-hat-camel-k-operator
 BUILDAH_VERSION := 1.14.0
 KANIKO_VERSION := 0.17.1
 INSTALL_DEFAULT_KAMELETS := true
-CONTROLLER_GEN_VERSION := v0.4.1
+CONTROLLER_GEN_VERSION := v0.6.1
 OPERATOR_SDK_VERSION := v1.14.0
 KUSTOMIZE_VERSION := v4.1.2
 BASE_IMAGE := adoptopenjdk/openjdk11:slim
@@ -469,6 +470,7 @@ pre-bundle:
 	@sed -i 's/^  version: .*/  version: $(CSV_VERSION)/' $(CSV_PATH)
 # update the patch label file before applying it
 	@sed -i 's/^        rht.comp_ver:.*/        rht.comp_ver: $(CUSTOM_VERSION)/' $(ADD_REDHAT_LABELS_PATCH)
+	@sed -i 's/^        rht.prod_ver:.*/        rht.prod_ver: $(RHI_VERSION)/' $(ADD_REDHAT_LABELS_PATCH)
 
 bundle: set-version generate-crd kustomize operator-sdk pre-bundle $(BUNDLE_CAMEL_APIS)
 	@# Sets the operator image to the preferred image:tag

@@ -25,7 +25,7 @@ spec:
       labels:
         com.company: Red_Hat
         rht.prod_name: Red_Hat_Integration
-        rht.prod_ver: 2022.Q1
+        rht.prod_ver: 20YY.QQ
         rht.comp: Camel-K
         rht.comp_ver: X.Y.Z
         rht.subcomp: camel-k-operator
