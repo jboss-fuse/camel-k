@@ -1,5 +1,5 @@
 # Go vendor
-/vendor
+
 /github.com
 
 # Binary files

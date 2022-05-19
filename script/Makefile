@@ -14,7 +14,7 @@
 # limitations under the License.
 
 VERSIONFILE := pkg/util/defaults/defaults.go
-VERSION ?= 1.9.2-SNAPSHOT
+VERSION ?= 1.9.0
 OPERATOR_VERSION := $(subst -SNAPSHOT,,$(VERSION))
 LAST_RELEASED_IMAGE_NAME := camel-k-operator
 LAST_RELEASED_VERSION := 1.9.1
@@ -38,7 +38,7 @@ IMAGE_NAME := docker.io/apache/camel-k
 # - need to preserve original image and version as used in other files
 #
 CUSTOM_IMAGE ?= $(IMAGE_NAME)
-CUSTOM_VERSION ?= $(VERSION)
+CUSTOM_VERSION ?= 1.9.0
 
 METADATA_IMAGE_NAME := $(CUSTOM_IMAGE)-metadata
 BUNDLE_IMAGE_NAME ?= $(CUSTOM_IMAGE)-bundle
