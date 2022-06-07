@@ -78,13 +78,18 @@ DO_TEST_PREBUILD ?= true
 TEST_PREBUILD = build
 
 # OLM (Operator Lifecycle Manager and Operator Hub): uncomment to override operator settings at build time
-#GOLDFLAGS += -X github.com/apache/camel-k/pkg/util/olm.DefaultOperatorName=camel-k-operator
-#GOLDFLAGS += -X github.com/apache/camel-k/pkg/util/olm.DefaultPackage=camel-k
-#GOLDFLAGS += -X github.com/apache/camel-k/pkg/util/olm.DefaultChannel=alpha
-#GOLDFLAGS += -X github.com/apache/camel-k/pkg/util/olm.DefaultSource=community-operators
-#GOLDFLAGS += -X github.com/apache/camel-k/pkg/util/olm.DefaultSourceNamespace=openshift-marketplace
-#GOLDFLAGS += -X github.com/apache/camel-k/pkg/util/olm.DefaultStartingCSV=
-#GOLDFLAGS += -X github.com/apache/camel-k/pkg/util/olm.DefaultGlobalNamespace=openshift-operators
+GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/cmd.VersionVariant=Red Hat'
+GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/install.KamelCLIDownloadURLTemplate=https://mirror.openshift.com/pub/openshift-v4/clients/camel-k/%s/camel-k-client-%s-%s-64bit.tar.gz'
+GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/util/olm.DefaultOperatorName=red-hat-camel-k-operator'
+GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/util/olm.DefaultPackage=red-hat-camel-k'
+GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/util/olm.DefaultChannel=1.9.x'
+GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/util/olm.DefaultSource=redhat-operators'
+GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/util/maven.DefaultMavenRepositories=https://maven.repository.redhat.com/ga@id=redhat.ga,https://repository.jboss.org/nexus/content/groups/ea@id=jboss.ea,https://maven.repository.redhat.com/earlyaccess/all@id=redhat.ea,https://repo.maven.apache.org/maven2@id=central'
+GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/kamelet/repository.DefaultRemoteRepository=none'
+GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/install.KamelCLIDownloadName=redhat-kamel-cli'
+GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/install.KamelCLIDownloadDisplayName=kamel - Red Hat Integration - Camel K - Command Line Interface'
+GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/install.KamelCLIDownloadDescription=CLI for Red Hat Integration - Camel K. The `kamel` binary can be used to both configure the cluster and run integrations. Once you have downloaded the `kamel` binary, log into the cluster using the `oc` client tool and start using the `kamel` CLI.'
+GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/util/label.AdditionalLabels=com.company=Red_Hat,rht.prod_name=Red_Hat_Integration,rht.prod_ver=2022.3,rht.comp=Camel-K,rht.comp_ver=1.9.0,rht.subcomp=token_integration_name,rht.subcomp_t=application'
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
