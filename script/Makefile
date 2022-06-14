@@ -383,7 +383,7 @@ get-staging-repo:
 
 # find or download controller-gen if necessary
 controller-gen:
-ifeq (, $(shell which controller-gen))
+ifeq (, $(shell command -v controller-gen))
 	@{ \
 	set -e ;\
 	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
@@ -394,18 +394,18 @@ ifeq (, $(shell which controller-gen))
 	}
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
-CONTROLLER_GEN=$(shell which controller-gen)
+CONTROLLER_GEN=$(shell command -v controller-gen)
 endif
 
 .PHONY: kubectl kustomize operator-sdk
 
 kubectl:
-ifeq (, $(shell which kubectl))
+ifeq (, $(shell command -v kubectl))
 $(error "No kubectl found in PATH. Please install and re-run")
 endif
 
 kustomize:
-ifeq (, $(shell which kustomize))
+ifeq (, $(shell command -v kustomize))
 	@{ \
 	set -e ;\
 	KUSTOMIZE_GEN_TMP_DIR=$$(mktemp -d) ;\
@@ -416,11 +416,11 @@ ifeq (, $(shell which kustomize))
 	}
 KUSTOMIZE=$(GOBIN)/kustomize
 else
-KUSTOMIZE=$(shell which kustomize)
+KUSTOMIZE=$(shell command -v kustomize)
 endif
 
 operator-sdk:
-ifeq (, $(shell which operator-sdk))
+ifeq (, $(shell command -v operator-sdk))
 	@{ \
 	set -e ;\
 	if [ "$(shell uname -s 2>/dev/null || echo Unknown)" == "Darwin" ] ; then \
@@ -442,7 +442,7 @@ else
   operator-sdk version | sed -n 's/.*"v\([^"]*\)".*/\1/p'; \
 	echo " If this is less than $(OPERATOR_SDK_VERSION) then please consider moving it aside and allowing the approved version to be downloaded."; \
 	}
-OPERATOR_SDK=$(shell which operator-sdk)
+OPERATOR_SDK=$(shell command -v operator-sdk)
 endif
 
 .PHONY: generate-crd $(BUNDLE_CAMEL_APIS) bundle bundle-build
