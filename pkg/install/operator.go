@@ -251,7 +251,7 @@ func OperatorOrCollect(ctx context.Context, c client.Client, cfg OperatorConfigu
 			return err
 		}
 		if err = installNamespacedRoleBinding(ctx, c, collection, cfg.Namespace, "/rbac/operator-role-binding-knative-eventing-webhook.yaml"); err != nil {
-			fmt.Fprintln(cmd.ErrOrStderr(), "Warning: the operator won't be able to detect Knative settings from knative-eventing namespace")
+			fmt.Printf("Warning: the operator won't be able to detect Knative settings from knative-eventing namespace. Error: %s\n", errors.Cause(err))
 		}
 		if err := installClusterRoleBinding(ctx, c, collection, cfg.Namespace, "camel-k-operator-bind-addressable-resolver", "/rbac/operator-cluster-role-binding-addressable-resolver.yaml"); err != nil {
 			if k8serrors.IsForbidden(err) {
@@ -316,6 +316,52 @@ func OperatorOrCollect(ctx context.Context, c client.Client, cfg OperatorConfigu
 
 	return nil
 }
+
+func installNamespacedRoleBinding(ctx context.Context, c client.Client, collection *kubernetes.Collection, namespace string, path string) error {
+	yaml, err := resources.ResourceAsString(path)
+	if err != nil {
+		return err
+	}
+	if yaml == "" {
+		return errors.Errorf("resource file %v not found", path)
+	}
+	obj, err := kubernetes.LoadResourceFromYaml(c.GetScheme(), yaml)
+	if err != nil {
+		return err
+	}
+	// nolint: forcetypeassert
+	target := obj.(*rbacv1.RoleBinding)
+
+	bound := false
+	for i, subject := range target.Subjects {
+		if subject.Name == "camel-k-operator" {
+			if subject.Namespace == namespace {
+				bound = true
+				break
+			} else if subject.Namespace == "" || subject.Namespace == "placeholder" {
+				target.Subjects[i].Namespace = namespace
+				bound = true
+				break
+			}
+		}
+	}
+
+	if !bound {
+		target.Subjects = append(target.Subjects, rbacv1.Subject{
+			Kind:      "ServiceAccount",
+			Namespace: namespace,
+			Name:      "camel-k-operator",
+		})
+	}
+
+	if collection != nil {
+		collection.Add(target)
+		return nil
+	}
+
+	return c.Create(ctx, target)
+}
+
 
 func installClusterRoleBinding(ctx context.Context, c client.Client, collection *kubernetes.Collection, namespace string, name string, path string) error {
 	var target *rbacv1.ClusterRoleBinding
