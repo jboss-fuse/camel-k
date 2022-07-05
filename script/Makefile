@@ -14,9 +14,9 @@
 # limitations under the License.
 
 VERSIONFILE := pkg/util/defaults/defaults.go
-VERSION := 1.6.4
-LAST_RELEASED_VERSION := 1.6.3
-RHI_VERSION := 2022Q3
+VERSION := 1.6.8
+LAST_RELEASED_VERSION := 1.6.7
+RHI_VERSION := 2022.Q2
 RUNTIME_VERSION := 1.9.0
 LAST_RELEASED_IMAGE_NAME := red-hat-camel-k-operator
 BUILDAH_VERSION := 1.14.0
