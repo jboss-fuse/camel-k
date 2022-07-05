@@ -39,7 +39,7 @@ spec:
       serviceAccountName: camel-k-operator
       containers:
         - name: camel-k-operator
-          image: docker.io/apache/camel-k:1.8.0
+          image: registry-proxy.engineering.redhat.com/rh-osbs/integration-camel-k-rhel8-operator:1.8.0
           imagePullPolicy: IfNotPresent
           command:
             - kamel

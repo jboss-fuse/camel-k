@@ -15,19 +15,19 @@
 
 VERSIONFILE := pkg/util/defaults/defaults.go
 VERSION ?= 1.8.0
-OPERATOR_VERSION := $(subst -SNAPSHOT,,$(VERSION))
 LAST_RELEASED_IMAGE_NAME := red-hat-camel-k-operator
 LAST_RELEASED_VERSION := 1.6.7
 RUNTIME_VERSION ?= 1.12.1
+RHI_VERSION := 2022.Q3
 BUILDAH_VERSION := 1.14.0
 KANIKO_VERSION := 0.17.1
 INSTALL_DEFAULT_KAMELETS := true
-CONTROLLER_GEN_VERSION := v0.4.1
+CONTROLLER_GEN_VERSION := v0.6.1
 OPERATOR_SDK_VERSION := v1.14.0
 KUSTOMIZE_VERSION := v4.1.2
 BASE_IMAGE ?= adoptopenjdk/openjdk11:slim
 LOCAL_REPOSITORY := /tmp/artifacts/m2
-IMAGE_NAME := docker.io/apache/camel-k
+IMAGE_NAME := registry-proxy.engineering.redhat.com/rh-osbs/integration-camel-k-rhel8-operator
 
 #
 # Situations when user wants to override
@@ -37,20 +37,33 @@ IMAGE_NAME := docker.io/apache/camel-k
 # - need to preserve original image and version as used in other files
 #
 CUSTOM_IMAGE ?= $(IMAGE_NAME)
-CUSTOM_VERSION ?= 1.8.0
+CUSTOM_VERSION ?= $(VERSION)
+OPERATOR_VERSION := $(subst -SNAPSHOT,,$(CUSTOM_VERSION))
+CUSTOM_TAG ?= $(OPERATOR_VERSION)
 
 METADATA_IMAGE_NAME := $(CUSTOM_IMAGE)-metadata
 BUNDLE_IMAGE_NAME ?= $(CUSTOM_IMAGE)-bundle
-RELEASE_GIT_REMOTE := origin
 GIT_COMMIT := $(shell if [ -d .git ]; then git rev-list -1 HEAD; else echo "$(CUSTOM_VERSION)"; fi)
+RELEASE_GIT_REMOTE := upstream
 LINT_GOGC := 10
 LINT_DEADLINE := 10m
 
 
 # olm bundle vars
-CHANNELS ?= $(OPERATOR_VERSION)
-DEFAULT_CHANNEL ?= $(OPERATOR_VERSION)
-PACKAGE := camel-k
+MANAGER := config/manager
+MANIFESTS := config/manifests
+CHANNELS ?= $(shell v=$(OPERATOR_VERSION) && echo "$${v%\.[0-9]}.x"),stable
+DEFAULT_CHANNEL ?= $(shell v=$(OPERATOR_VERSION) && echo "$${v%\.[0-9]}.x")
+PACKAGE := red-hat-camel-k
+CSV_VERSION := $(CUSTOM_VERSION:-SNAPSHOT=)
+CSV_NAME := $(PACKAGE).v$(CSV_VERSION)
+CSV_DISPLAY_NAME := Red Hat Integration - Camel K
+CSV_SUPPORT := Camel
+CSV_REPLACES := $(LAST_RELEASED_IMAGE_NAME).v$(LAST_RELEASED_VERSION)
+CSV_FILENAME := $(PACKAGE).clusterserviceversion.yaml
+CSV_PATH := $(MANIFESTS)/bases/$(CSV_FILENAME)
+DEFAULT_CSV := $(MANIFESTS)/bases/camel-k.clusterserviceversion.yaml
+ADD_REDHAT_LABELS_PATCH := $(MANAGER)/patch-add-redhat-labels.yaml
 
 # Used to push pre-release artifacts
 STAGING_IMAGE_NAME := docker.io/camelk/camel-k
@@ -252,7 +265,7 @@ endif
 
 build-resources:
 	./script/build_catalog.sh $(RUNTIME_VERSION) -Dcatalog.file=camel-catalog-$(RUNTIME_VERSION).yaml -Dcatalog.runtime=quarkus -Dstaging.repo="$(STAGING_RUNTIME_REPO)"
-	go generate ./pkg/...
+	go generate -mod=vendor ./pkg/...
 
 bundle-kamelets:
 ifneq (,$(findstring release,$(MAKECMDGOALS)))
@@ -286,6 +299,11 @@ clean:
 	rm -rf camel-k-client-*.tar.gz
 	rm -rf camel-k-examples-*.tar.gz
 	rm -rf bundle
+ifneq ($(CSV_PATH), $(DEFAULT_CSV))
+ifneq ("$(wildcard $(CSV_PATH))","")
+	mv $(CSV_PATH) $(DEFAULT_CSV)
+endif
+endif
 
 dep:
 	go mod tidy
@@ -383,7 +401,7 @@ get-staging-repo:
 
 # find or download controller-gen if necessary
 controller-gen:
-ifeq (, $(shell command -v controller-gen))
+ifeq (, $(shell command -v controller-gen 2> /dev/null))
 	@{ \
 	set -e ;\
 	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
@@ -394,18 +412,16 @@ ifeq (, $(shell command -v controller-gen))
 	}
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
-CONTROLLER_GEN=$(shell command -v controller-gen)
+CONTROLLER_GEN=$(shell command -v controller-gen 2> /dev/null)
 endif
 
-.PHONY: kubectl kustomize operator-sdk
-
 kubectl:
-ifeq (, $(shell command -v kubectl))
+ifeq (, $(shell command -v kubectl 2> /dev/null))
 	$(error "No kubectl found in PATH. Please install and re-run")
 endif
 
 kustomize:
-ifeq (, $(shell command -v kustomize))
+ifeq (, $(shell command -v kustomize 2> /dev/null))
 	@{ \
 	set -e ;\
 	KUSTOMIZE_GEN_TMP_DIR=$$(mktemp -d) ;\
@@ -416,11 +432,11 @@ ifeq (, $(shell command -v kustomize))
 	}
 KUSTOMIZE=$(GOBIN)/kustomize
 else
-KUSTOMIZE=$(shell command -v kustomize)
+KUSTOMIZE=$(shell command -v kustomize 2> /dev/null)
 endif
 
 operator-sdk:
-ifeq (, $(shell command -v operator-sdk))
+ifeq (, $(shell command -v operator-sdk 2> /dev/null))
 	@{ \
 	set -e ;\
 	if [ "$(shell uname -s 2>/dev/null || echo Unknown)" == "Darwin" ] ; then \
@@ -442,7 +458,7 @@ else
   operator-sdk version | sed -n 's/.*"v\([^"]*\)".*/\1/p'; \
 	echo " If this is less than $(OPERATOR_SDK_VERSION) then please consider moving it aside and allowing the approved version to be downloaded."; \
 	}
-OPERATOR_SDK=$(shell command -v operator-sdk)
+OPERATOR_SDK=$(shell command -v operator-sdk 2> /dev/null)
 endif
 
 .PHONY: generate-crd $(BUNDLE_CAMEL_APIS) bundle bundle-build
@@ -478,7 +494,25 @@ BUNDLE_PACKAGE := --package=$(PACKAGE)
 endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL) $(BUNDLE_PACKAGE)
 
-bundle: set-version generate-crd $(BUNDLE_CAMEL_APIS) kustomize operator-sdk
+#
+# Tailor the manifest according to default values for this project
+# Note. to successfully make the bundle the name must match that specified in the PROJECT file
+#
+pre-bundle:
+# bundle name must match that which appears in PROJECT file
+	@sed -i 's/projectName: .*/projectName: $(PACKAGE)/' PROJECT
+# finds the single CSV file and renames it
+	@find $(MANIFESTS)/bases -type f -name "*.clusterserviceversion.yaml" -execdir mv '{}' $(CSV_FILENAME) ';'
+	@sed -i 's~^    containerImage: .*~    containerImage: $(CUSTOM_IMAGE):$(CUSTOM_TAG)~' $(CSV_PATH)
+	@sed -i 's/^  name: .*.\(v.*\)/  name: $(CSV_NAME)/' $(CSV_PATH)
+	@sed -i 's/^  displayName: .*/  displayName: $(CSV_DISPLAY_NAME)/' $(CSV_PATH)
+	@sed -i 's/^  replaces: .*/  replaces: $(CSV_REPLACES)/' $(CSV_PATH)
+	@sed -i 's/^  version: .*/  version: $(CSV_VERSION)/' $(CSV_PATH)
+# update the patch label file before applying it
+	@sed -i 's/^        rht.comp_ver:.*/        rht.comp_ver: $(CUSTOM_VERSION)/' $(ADD_REDHAT_LABELS_PATCH)
+	@sed -i 's/^        rht.prod_ver:.*/        rht.prod_ver: $(RHI_VERSION)/' $(ADD_REDHAT_LABELS_PATCH)
+
+bundle: set-version generate-crd kustomize operator-sdk pre-bundle $(BUNDLE_CAMEL_APIS)
 	@# Sets the operator image to the preferred image:tag
 	@cd config/manifests && $(KUSTOMIZE) edit set image $(IMAGE_NAME)=$(CUSTOM_IMAGE):$(CUSTOM_VERSION)
 	@# Build kustomize manifests
@@ -493,8 +527,8 @@ else
 	@mv bundle.Dockerfile bundle/Dockerfile && sed -i 's/bundle\///g' bundle/Dockerfile
 endif
 	@# Adds the licence headers to the csv file
-	./script/add_license.sh bundle/manifests ./script/headers/yaml.txt
-	$(OPERATOR_SDK) bundle validate ./bundle
+	@./script/add_license.sh bundle/manifests ./script/headers/yaml.txt
+	@$(OPERATOR_SDK) bundle validate ./bundle
 
 # Build the bundle image.
 bundle-build: bundle

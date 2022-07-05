@@ -15,17 +15,18 @@
 # limitations under the License.
 # ---------------------------------------------------------------------------
 
-# Default values for camel-k.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-
-nameOverride: ""
-fullnameOverride: ""
-
-operator:
-  image: registry-proxy.engineering.redhat.com/rh-osbs/integration-camel-k-rhel8-operator:1.8.0
-
-platform:
-  build:
-    registry: {}
-  cluster: ""
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camel-k-operator
+spec:
+  template:
+    metadata:
+      labels:
+        com.company: Red_Hat
+        rht.prod_name: Red_Hat_Integration
+        rht.prod_ver: 20YY.QQ
+        rht.comp: Camel-K
+        rht.comp_ver: X.Y.Z
+        rht.subcomp: camel-k-operator
+        rht.subcomp_t: infrastructure

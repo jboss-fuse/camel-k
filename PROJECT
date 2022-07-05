@@ -1,6 +1,6 @@
 domain: apache.org
 layout: go.kubebuilder.io/v2
-projectName: camel-k
+projectName: red-hat-camel-k
 repo: github.com/apache/camel-k
 resources:
 - group: camel
