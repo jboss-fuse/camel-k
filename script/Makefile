@@ -52,7 +52,7 @@ LINT_DEADLINE := 10m
 # olm bundle vars
 MANAGER := config/manager
 MANIFESTS := config/manifests
-CHANNELS ?= $(shell v=$(OPERATOR_VERSION) && echo "$${v%\.[0-9]}.x"),stable
+CHANNELS ?= $(shell v=$(OPERATOR_VERSION) && echo "$${v%\.[0-9]}.x"),candidate,latest
 DEFAULT_CHANNEL ?= $(shell v=$(OPERATOR_VERSION) && echo "$${v%\.[0-9]}.x")
 PACKAGE := red-hat-camel-k
 CSV_VERSION := $(CUSTOM_VERSION:-SNAPSHOT=)
