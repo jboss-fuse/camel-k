@@ -60,6 +60,7 @@ CSV_NAME := $(PACKAGE).v$(CSV_VERSION)
 CSV_DISPLAY_NAME := Red Hat Integration - Camel K
 CSV_SUPPORT := Camel
 CSV_REPLACES := $(LAST_RELEASED_IMAGE_NAME).v$(LAST_RELEASED_VERSION)
+CSV_SKIP_RANGE := ">=1.6.7 <$(CSV_VERSION)"
 CSV_FILENAME := $(PACKAGE).clusterserviceversion.yaml
 CSV_PATH := $(MANIFESTS)/bases/$(CSV_FILENAME)
 DEFAULT_CSV := $(MANIFESTS)/bases/camel-k.clusterserviceversion.yaml
@@ -507,6 +508,7 @@ pre-bundle:
 	@sed -i 's/^  name: .*.\(v.*\)/  name: $(CSV_NAME)/' $(CSV_PATH)
 	@sed -i 's/^  displayName: .*/  displayName: $(CSV_DISPLAY_NAME)/' $(CSV_PATH)
 	@sed -i 's/^  replaces: .*/  replaces: $(CSV_REPLACES)/' $(CSV_PATH)
+	@sed -i 's/^    olm.skipRange: .*/    olm.skipRange: $(CSV_SKIP_RANGE)/' $(CSV_PATH)
 	@sed -i 's/^  version: .*/  version: $(CSV_VERSION)/' $(CSV_PATH)
 # update the patch label file before applying it
 	@sed -i 's/^        rht.comp_ver:.*/        rht.comp_ver: $(CUSTOM_VERSION)/' $(ADD_REDHAT_LABELS_PATCH)
