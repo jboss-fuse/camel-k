@@ -247,6 +247,12 @@ func OperatorOrCollect(ctx context.Context, c client.Client, cfg OperatorConfigu
 		if err := installKnative(ctx, c, cfg.Namespace, customizer, collection, force); err != nil {
 			return err
 		}
+		if err := installKnativeEventingRoles(ctx, c, customizer, collection, force); err != nil {
+			return err
+		}
+		if err = installNamespacedRoleBinding(ctx, c, collection, cfg.Namespace, "/rbac/operator-role-binding-knative-eventing-webhook.yaml"); err != nil {
+			fmt.Fprintln(cmd.ErrOrStderr(), "Warning: the operator won't be able to detect Knative settings from knative-eventing namespace")
+		}
 		if err := installClusterRoleBinding(ctx, c, collection, cfg.Namespace, "camel-k-operator-bind-addressable-resolver", "/rbac/operator-cluster-role-binding-addressable-resolver.yaml"); err != nil {
 			if k8serrors.IsForbidden(err) {
 				fmt.Println("Warning: the operator will not be able to bind Knative addressable-resolver ClusterRole. Try installing the operator as cluster-admin.")
@@ -419,6 +425,11 @@ func installKnative(ctx context.Context, c client.Client, namespace string, cust
 	return ResourcesOrCollect(ctx, c, namespace, collection, force, customizer,
 		"/rbac/operator-role-knative.yaml",
 		"/rbac/operator-role-binding-knative.yaml",
+	)
+}
+func installKnativeEventingRoles(ctx context.Context, c client.Client, customizer ResourceCustomizer, collection *kubernetes.Collection, force bool) error {
+	return ResourcesOrCollect(ctx, c, "knative-eventing", collection, force, customizer,
+		"/rbac/operator-role-knative-eventing-webhook.yaml",
 	)
 }
 
