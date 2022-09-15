@@ -1,0 +1,91 @@
+# ---------------------------------------------------------------------------
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ---------------------------------------------------------------------------
+
+name: local
+
+on:
+  pull_request:
+    branches:
+      - main
+      - "release-*"
+    paths-ignore:
+      - 'docs/**'
+      - 'proposals/**'
+      - '**.adoc'
+      - '**.md'
+      - 'KEYS'
+      - 'LICENSE'
+      - 'NOTICE'
+  push:
+    branches:
+      - main
+      - "release-*"
+    paths-ignore:
+      - 'docs/**'
+      - 'proposals/**'
+      - '**.adoc'
+      - '**.md'
+      - 'KEYS'
+      - 'LICENSE'
+      - 'NOTICE'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  local-it:
+
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Cleanup
+      run: |
+        ls -lart
+        echo "Initial status:"
+        df -h
+
+        echo "Cleaning up resources:"
+        sudo swapoff -a
+        sudo rm -f /swapfile
+        sudo apt clean
+        docker rmi $(docker image ls -aq)
+
+        echo "Final status:"
+        df -h
+    - name: Set up JDK 11
+      uses: AdoptOpenJDK/install-jdk@v1
+      with:
+        version: "11"
+    - name: Set Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.16.x
+    - name: Build Kamel
+      run: |
+        echo "Build project"
+        make build-kamel
+        sudo mv ./kamel /usr/local/bin
+    - name: Run IT
+      run: |
+        # Configure staging repos
+        export KAMEL_LOCAL_RUN_MAVEN_REPOSITORIES=$(make get-staging-repo)
+
+        # Then run integration tests
+        make test-local
