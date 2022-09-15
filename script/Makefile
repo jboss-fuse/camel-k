@@ -16,9 +16,9 @@
 VERSIONFILE := pkg/util/defaults/defaults.go
 VERSION ?= 1.8.1
 LAST_RELEASED_IMAGE_NAME := red-hat-camel-k-operator
-LAST_RELEASED_VERSION := 1.6.7
+LAST_RELEASED_VERSION := 1.8.0
 RUNTIME_VERSION ?= 1.12.0
-RHI_VERSION := 2022.Q3
+RHI_VERSION := 2022.Q4
 BUILDAH_VERSION := 1.14.0
 KANIKO_VERSION := 0.17.1
 INSTALL_DEFAULT_KAMELETS := true
@@ -92,7 +92,7 @@ GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/kamelet/repository.DefaultRemoteR
 GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/install.KamelCLIDownloadName=redhat-kamel-cli'
 GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/install.KamelCLIDownloadDisplayName=kamel - Red Hat Integration - Camel K - Command Line Interface'
 GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/install.KamelCLIDownloadDescription=CLI for Red Hat Integration - Camel K. The \"kamel\" binary can be used to both configure the cluster and run integrations. Once you have downloaded the \"kamel\" binary, log into the cluster using the \"oc\" client tool and start using the \"kamel\" CLI.'
-GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/util/label.AdditionalLabels=com.company=Red_Hat,rht.prod_name=Red_Hat_Integration,rht.prod_ver=2022.Q3,rht.comp=Camel-K,rht.comp_ver=1.8.0,rht.subcomp=token_integration_name,rht.subcomp_t=application'
+GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/util/label.AdditionalLabels=com.company=Red_Hat,rht.prod_name=Red_Hat_Integration,rht.prod_ver=2022.Q4,rht.comp=Camel-K,rht.comp_ver=1.8.0,rht.subcomp=token_integration_name,rht.subcomp_t=application'
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
