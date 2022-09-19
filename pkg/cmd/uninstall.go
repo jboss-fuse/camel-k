@@ -333,7 +333,6 @@ func (o *uninstallCmdOptions) uninstallRolesFromNamespace(ctx context.Context, c
 	return nil
 }
 
-
 func (o *uninstallCmdOptions) uninstallRoleBindings(ctx context.Context, c client.Client) error {
 	err := o.uninstallRoleBindingsFromNamespace(ctx, c, o.Namespace)
 	if err != nil {
