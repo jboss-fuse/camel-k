@@ -392,7 +392,7 @@ github.com/spf13/viper
 # github.com/stoewer/go-strcase v1.2.0
 ## explicit
 github.com/stoewer/go-strcase
-# github.com/stretchr/testify v1.7.0
+# github.com/stretchr/testify v1.8.0
 ## explicit
 github.com/stretchr/testify/assert
 # github.com/subosito/gotenv v1.2.0
@@ -629,7 +629,7 @@ gopkg.in/ini.v1
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit
 gopkg.in/yaml.v2
-# gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+# gopkg.in/yaml.v3 v3.0.1
 gopkg.in/yaml.v3
 # k8s.io/api v0.21.4
 ## explicit
