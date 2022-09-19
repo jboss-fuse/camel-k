@@ -370,7 +370,7 @@ github.com/shurcooL/httpfs/vfsutil
 # github.com/shurcooL/vfsgen v0.0.0-20181202132449-6a9ea43bcacd
 ## explicit
 github.com/shurcooL/vfsgen
-# github.com/sirupsen/logrus v1.8.1
+# github.com/sirupsen/logrus v1.9.0
 ## explicit
 github.com/sirupsen/logrus
 # github.com/spf13/afero v1.6.0
@@ -474,7 +474,7 @@ golang.org/x/oauth2/jwt
 ## explicit
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.0.0-20211124211545-fe61309f8881
+# golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
