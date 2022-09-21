@@ -508,7 +508,6 @@ pre-bundle:
 	@sed -i 's/^  name: .*.\(v.*\)/  name: $(CSV_NAME)/' $(CSV_PATH)
 	@sed -i 's/^  displayName: .*/  displayName: $(CSV_DISPLAY_NAME)/' $(CSV_PATH)
 	@sed -i 's/^  replaces: .*/  replaces: $(CSV_REPLACES)/' $(CSV_PATH)
-	@sed -i 's/^    olm.skipRange: .*/    olm.skipRange: $(CSV_SKIP_RANGE)/' $(CSV_PATH)
 	@sed -i 's/^  version: .*/  version: $(CSV_VERSION)/' $(CSV_PATH)
 # update the patch label file before applying it
 	@sed -i 's/^        rht.comp_ver:.*/        rht.comp_ver: $(CUSTOM_VERSION)/' $(ADD_REDHAT_LABELS_PATCH)

@@ -23,10 +23,10 @@ metadata:
     categories: Integration & Delivery
     certified: "false"
     containerImage: registry-proxy.engineering.redhat.com/rh-osbs/integration-camel-k-rhel8-operator:1.8.1
-    createdAt: 2021-12-20T16:11:27Z
+    createdAt: 2022-09-21T12:01:32Z
     description: Red Hat Integration - Camel K is a lightweight integration platform,
       born on Kubernetes, with serverless superpowers.
-    olm.skipRange: '>=1.6.7 <X.Y.Z'
+    olm.skipRange: '>=1.6.7 <1.8.0'
     operators.operatorframework.io/builder: operator-sdk-v1.3.0
     operators.operatorframework.io/internal-objects: '["builds.camel.apache.org","integrationkits.camel.apache.org","camelcatalogs.camel.apache.org"]'
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
