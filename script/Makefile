@@ -23,7 +23,7 @@ BUILDAH_VERSION := 1.14.0
 KANIKO_VERSION := 0.17.1
 INSTALL_DEFAULT_KAMELETS := true
 CONTROLLER_GEN_VERSION := v0.4.1
-OPERATOR_SDK_VERSION := v1.14.0
+OPERATOR_SDK_VERSION := v1.16.0
 KUSTOMIZE_VERSION := v4.1.2
 BASE_IMAGE ?= adoptopenjdk/openjdk11:slim
 LOCAL_REPOSITORY := /tmp/artifacts/m2
@@ -52,11 +52,13 @@ LINT_DEADLINE := 10m
 # olm bundle vars
 MANAGER := config/manager
 MANIFESTS := config/manifests
+BUNDLE_DIR := bundle
 CHANNELS ?= $(shell v=$(OPERATOR_VERSION) && echo "$${v%\.[0-9]}.x"),candidate,latest
 DEFAULT_CHANNEL ?= $(shell v=$(OPERATOR_VERSION) && echo "$${v%\.[0-9]}.x")
 PACKAGE := red-hat-camel-k
 CSV_VERSION := $(CUSTOM_VERSION:-SNAPSHOT=)
 CSV_NAME := $(PACKAGE).v$(CSV_VERSION)
+CSV_PRODUCT_NAME := $(PACKAGE)-operator.v$(CSV_VERSION)
 CSV_DISPLAY_NAME := Red Hat Integration - Camel K
 CSV_SUPPORT := Camel
 CSV_REPLACES := $(LAST_RELEASED_IMAGE_NAME).v$(LAST_RELEASED_VERSION)
@@ -530,6 +532,10 @@ endif
 	@# Adds the licence headers to the csv file
 	./script/add_license.sh bundle/manifests ./script/headers/yaml.txt
 	$(OPERATOR_SDK) bundle validate ./bundle
+# operator-sdk requires the name of the operator to be the PACKAGE
+# However, the historical name of the operator has the suffix 'operator' so this should
+# be added once the validation has been completed
+	@sed -i 's/  name: $(CSV_NAME)/  name: $(CSV_PRODUCT_NAME)/' $(BUNDLE_DIR)/manifests/$(CSV_FILENAME)
 
 # Build the bundle image.
 bundle-build: bundle
