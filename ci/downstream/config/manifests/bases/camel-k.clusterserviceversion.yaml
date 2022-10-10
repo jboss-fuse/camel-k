@@ -1,0 +1,163 @@
+# ---------------------------------------------------------------------------
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ---------------------------------------------------------------------------
+
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    capabilities: Full Lifecycle
+    categories: Integration & Delivery
+    certified: "false"
+    containerImage: registry-proxy.engineering.redhat.com/rh-osbs/integration-camel-k-rhel8-operator:1.8.1
+    createdAt: 2022-09-21T12:01:32Z
+    description: Red Hat Integration - Camel K is a lightweight integration platform,
+      born on Kubernetes, with serverless superpowers.
+    olm.skipRange: '>=1.6.7 <1.8.0'
+    operators.operatorframework.io/builder: operator-sdk-v1.16.0
+    operators.operatorframework.io/internal-objects: '["builds.camel.apache.org","integrationkits.camel.apache.org","camelcatalogs.camel.apache.org"]'
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
+    operators.openshift.io/valid-subscription: '["Red Hat Integration", "Red Hat Application Foundations", "Red Hat Camel K"]'
+    repository: https://github.com/apache/camel-k
+    support: Camel
+  name: camel-k.vX.Y.Z
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: Build is the Schema for the builds API
+      displayName: Build
+      kind: Build
+      name: builds.camel.apache.org
+      version: v1
+    - description: CamelCatalog is the Schema for the camelcatalogs API
+      displayName: Camel Catalog
+      kind: CamelCatalog
+      name: camelcatalogs.camel.apache.org
+      version: v1
+    - description: IntegrationKit is the Schema for the integrationkits API
+      displayName: Integration Kit
+      kind: IntegrationKit
+      name: integrationkits.camel.apache.org
+      version: v1
+    - description: IntegrationPlatform is the Schema for the integrationplatforms
+        API
+      displayName: Integration Platform
+      kind: IntegrationPlatform
+      name: integrationplatforms.camel.apache.org
+      version: v1
+    - description: Integration is the Schema for the integrations API
+      displayName: Integration
+      kind: Integration
+      name: integrations.camel.apache.org
+      version: v1
+    - description: KameletBinding is the Schema for the kamelets binding API
+      displayName: Kamelet Binding
+      kind: KameletBinding
+      name: kameletbindings.camel.apache.org
+      version: v1alpha1
+    - description: Kamelet is the Schema for the kamelets API
+      displayName: Kamelet
+      kind: Kamelet
+      name: kamelets.camel.apache.org
+      version: v1alpha1
+  description: |
+    Red Hat Integration - Camel K
+    ==============
+
+    **Red Hat Integration - Camel K** is a lightweight integration platform, born on Kubernetes, with serverless superpowers.
+
+    ## Installation
+
+    To start using Camel K, install the operator and then create the following `IntegrationPlatform`:
+    ```
+    apiVersion: camel.apache.org/v1
+    kind: IntegrationPlatform
+    metadata:
+      name: camel-k
+      labels:
+        app: "camel-k"
+    ```
+
+    An `IntegrationPlatform` resource is automatically created by default on OpenShift, so you can skip this step.
+    Also, You can edit the `IntegrationPlatform`, to configure Camel K.
+    The configuration from the `IntegrationPlatform` will apply to the Camel integrations created in the same namespace/project.
+
+    ## Running an Integration
+
+    After the initial setup, you can run a Camel integration on the cluster by creating an example `Integration`, e.g.:
+    ```
+    apiVersion: camel.apache.org/v1
+    kind: Integration
+    metadata:
+      name: example
+    spec:
+      sources:
+      - name: Example.java
+        content: |
+          import org.apache.camel.builder.RouteBuilder;
+
+          public class Example extends RouteBuilder {
+              @Override
+              public void configure() throws Exception {
+                  from("timer:tick")
+                      .setBody(constant("Hello World!"))
+                  .to("log:info?skipBodyLineSeparator=false");
+              }
+          }
+    ```
+  displayName: Red Hat Integration - Camel K
+  icon:
+  - base64data: PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2Q3MWUwMDt9LmNscy0ye2ZpbGw6I2MyMWEwMDt9LmNscy0ze2ZpbGw6I2ZmZjt9LmNscy00e2ZpbGw6I2VhZWFlYTt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPkxvZ288L3RpdGxlPjxnIGlkPSJMYXllcl8xIiBkYXRhLW5hbWU9IkxheWVyIDEiPjxjaXJjbGUgY2xhc3M9ImNscy0xIiBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMC43MSA1MCkgcm90YXRlKC00NSkiLz48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik04NS4zNiwxNC42NEE1MCw1MCwwLDAsMSwxNC42NCw4NS4zNloiLz48cGF0aCBkPSJNMzEsMzEuMzZhMS45NCwxLjk0LDAsMCwxLTMuNjItLjg5LjQzLjQzLDAsMCwxLC41My0uNDQsMy4zMiwzLjMyLDAsMCwwLDIuODEuN0EuNDMuNDMsMCwwLDEsMzEsMzEuMzZaIi8+PHBhdGggY2xhc3M9ImNscy0zIiBkPSJNNzcuNjMsNDQuNzZDNzcuMTIsNDEuMzQsNzMsMjEsNjYuMzIsMjFjLTIuNDQsMC00LjU5LDMuMzUtNiw2Ljg4LS40NCwxLjA2LTEuMjMsMS4wOC0xLjYzLDBDNTcuMjQsMjQuMTYsNTUuODgsMjEsNTMuMjgsMjEsNDMuMzQsMjEsNDcuODQsNDUuMTgsMzksNDUuMThjLTQuNTcsMC01LjM3LTEwLjU5LTUuNS0xNC43MiwyLjE5LjY1LDMuMy0xLDMuNTUtMi42MWEuNjMuNjMsMCwwLDAtLjQ4LS43MiwzLjM2LDMuMzYsMCwwLDAtMywuODlIMjcuMzFhMSwxLDAsMCwwLS42OC4yOGwtLjUzLjUzSDIyLjIxYS41NC41NCwwLDAsMC0uMzguMTZsLTMuOTUsMy45NWEuNTQuNTQsMCwwLDAsLjM4LjkxaC4zNmwwLDBIMjkuNzFjLjYsNi4yNiwxLjc1LDIyLDE2LjQyLDE3LjE5bC0uMzIsNUw0NC4zNyw3OC40NmExLDEsMCwwLDAsMSwxaDQuOWExLDEsMCwwLDAsMS0xbC0uNjEtMjMuMzMtLjE1LTUuODFjNi0yLjc4LDktNS42NiwxNi4xOS02Ljc1LTEuNTksMi42Mi0yLjA1LDYuODctMi4wNiw4LS4wNiw2LDIuNTUsOC43NCw1LDEzLjIyTDYzLjczLDc4YTEsMSwwLDAsMCwuODksMS4zMmg0LjY0YTEsMSwwLDAsMCwuOTMtLjc0TDc0LDYyLjZjLTQuODMtNy40MywxLjgzLTE1LjMxLDMuNDEtMTdBMSwxLDAsMCwwLDc3LjYzLDQ0Ljc2Wk0zMSwzMS4zNmExLjk0LDEuOTQsMCwwLDEtMy42Mi0uODkuNDMuNDMsMCwwLDEsLjUzLS40NCwzLjMyLDMuMzIsMCwwLDAsMi44MS43QS40My40MywwLDAsMSwzMSwzMS4zNloiLz48cGF0aCBjbGFzcz0iY2xzLTQiIGQ9Ik00Ni4xMyw1MS4wN0MzMS40Niw1NS45MiwzMC4zMSw0MC4xNCwyOS43MSwzMy44OEgxOC42NUwyMC43NSwzNmExLDEsMCwwLDAsLjY4LjI4aDZjMCw1LjgsMS4xMywyMC4yLDE0LDIwLjJhMzEuMzQsMzEuMzQsMCwwLDAsNC40Mi0uMzVaIi8+PHBhdGggY2xhc3M9ImNscy00IiBkPSJNNTAuNDEsNDkuMzZsLjE1LDUuODFhMTA4LjIsMTA4LjIsMCwwLDAsMTQtNC41NCwxOS43OSwxOS43OSwwLDAsMSwyLjA2LThDNTkuNDYsNDMuNyw1Ni40NCw0Ni41OCw1MC40MSw0OS4zNloiLz48L2c+PC9zdmc+
+    mediatype: image/svg+xml
+  install:
+    spec:
+      deployments: null
+    strategy: deployment
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: true
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - apache
+  - kamel
+  - kubernetes
+  - serverless
+  - microservices
+  labels:
+    name: camel-k-operator
+  links:
+  - name: Apache Camel K source code repository
+    url: https://github.com/apache/camel-k
+  maintainers:
+  - email: janstey@redhat.com
+    name: Jon Anstey
+  maturity: alpha
+  minKubeVersion: 1.14.0
+  provider:
+    name: Red Hat
+    url: https://access.redhat.com/products/red-hat-integration
+  replaces: red-hat-camel-k-operator.vX.Y.Z
+  selector:
+    matchLabels:
+      name: camel-k-operator
+  version: X.Y.Z
