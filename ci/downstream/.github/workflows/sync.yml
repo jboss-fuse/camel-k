@@ -61,6 +61,10 @@ jobs:
         uses: squakez/sync-go-vendor@v0
         with:
           go-src-path: "./pkg/..."
+      - name: Pin init directory divergencies
+        uses: squakez/sync-pin-divergencies@v0
+        with:
+          init-directory: "ci/downstream"          
       - name: Git push          
         run: |
           git push origin HEAD:${{ github.ref }}
