@@ -357,7 +357,7 @@ github.com/rickb777/date/period
 github.com/rickb777/plural
 # github.com/robfig/cron/v3 v3.0.1
 github.com/robfig/cron/v3
-# github.com/rs/xid v1.2.1
+# github.com/rs/xid v1.4.0
 ## explicit
 github.com/rs/xid
 # github.com/scylladb/go-set v1.0.2
