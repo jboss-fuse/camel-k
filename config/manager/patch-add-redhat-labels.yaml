@@ -14,18 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ---------------------------------------------------------------------------
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
 
-# Labels to add to all resources and selectors.
-
-resources:
-- ../manager
-- ../crd
-- ../samples
-- ../scorecard
-- ../rbac
-- ../rbac/openshift
-
-patchesStrategicMerge:
-- patch-delete-user-cluster-role.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camel-k-operator
+spec:
+  template:
+    metadata:
+      labels:
+        com.company: Red_Hat
+        rht.prod_name: Red_Hat_Integration
+        rht.prod_ver: 20YY.QQ
+        rht.comp: Camel-K
+        rht.comp_ver: X.Y.Z
+        rht.subcomp: camel-k-operator
+        rht.subcomp_t: infrastructure
