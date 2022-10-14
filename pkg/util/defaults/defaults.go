@@ -23,10 +23,10 @@ package defaults
 
 const (
 	// Version --
-	Version = "1.9.3-SNAPSHOT"
+	Version = "1.9.0"
 
 	// DefaultRuntimeVersion --
-	DefaultRuntimeVersion = "1.13.0"
+	DefaultRuntimeVersion = "1.12.0"
 
 	// BuildahVersion --
 	BuildahVersion = "1.14.0"
@@ -41,7 +41,7 @@ const (
 	LocalRepository = "/tmp/artifacts/m2"
 
 	// ImageName --
-	ImageName = "docker.io/apache/camel-k"
+	ImageName = "registry-proxy.engineering.redhat.com/rh-osbs/integration-camel-k-rhel8-operator"
 
 	// installDefaultKamelets --
 	installDefaultKamelets = true
