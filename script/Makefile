@@ -536,6 +536,8 @@ endif
 # However, the historical name of the operator has the suffix 'operator' so this should
 # be added once the validation has been completed
 	@sed -i 's/  name: $(CSV_NAME)/  name: $(CSV_PRODUCT_NAME)/' $(BUNDLE_DIR)/manifests/$(CSV_FILENAME)
+	@# Execute post bundle-generation modifications
+	@CSV_VERSION=$(CSV_VERSION) OPERATOR_VERSION=$(CUSTOM_TAG) ./script/post_bundle_gen.sh
 
 # Build the bundle image.
 bundle-build: bundle
