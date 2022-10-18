@@ -7,13 +7,13 @@ import (
 	"strings"
 )
 
-// Rule --
+// Rule -- pluralize rule expression and replacement value.
 type Rule struct {
-	Expression  *regexp.Regexp
-	Replacement string
+	expression  *regexp.Regexp
+	replacement string
 }
 
-// Client --
+// Client -- pluralize client.
 type Client struct {
 	pluralRules      []Rule
 	singularRules    []Rule
@@ -23,15 +23,15 @@ type Client struct {
 	interpolateExpr  *regexp.Regexp
 }
 
-// NewClient - pluralization client factory method
+// NewClient - pluralization client factory method.
 func NewClient() *Client {
 	client := Client{}
 	client.init()
+
 	return &client
 }
 
 func (c *Client) init() {
-
 	c.pluralRules = make([]Rule, 0)
 	c.singularRules = make([]Rule, 0)
 	c.uncountables = make(map[string]bool)
@@ -43,61 +43,60 @@ func (c *Client) init() {
 	c.loadSingularizationRules()
 	c.loadUncountableRules()
 	c.interpolateExpr = regexp.MustCompile(`\$(\d{1,2})`)
-
 }
 
-// Pluralize -- Pluralize or singularize a word based on the passed in count
+// Pluralize -- Pluralize or singularize a word based on the passed in count.
 // 	word: the word to pluralize
 // 	count: how many of the word exist
 // 	inclusive: whether to prefix with the number (e.g. 3 ducks)
 func (c *Client) Pluralize(word string, count int, inclusive bool) string {
-
 	pluralized := func() func(string) string {
 		if count == 1 {
 			return c.Singular
 		}
+
 		return c.Plural
 	}
 
 	if inclusive {
 		return fmt.Sprintf("%d %s", count, pluralized()(word))
 	}
+
 	return pluralized()(word)
 }
 
-// Plural -- Pluralize a word
+// Plural -- Pluralize a word.
 func (c *Client) Plural(word string) string {
 	return c.replaceWord(c.irregularSingles, c.irregularPlurals, c.pluralRules)(word)
 }
 
-// IsPlural -- Check if a word is plural
+// IsPlural -- Check if a word is plural.
 func (c *Client) IsPlural(word string) bool {
 	return c.checkWord(c.irregularSingles, c.irregularPlurals, c.pluralRules)(word)
 }
 
-// Singular -- Singularize a word
+// Singular -- Singularize a word.
 func (c *Client) Singular(word string) string {
 	return c.replaceWord(c.irregularPlurals, c.irregularSingles, c.singularRules)(word)
 }
 
-// IsSingular -- Check if a word is singular
+// IsSingular -- Check if a word is singular.
 func (c *Client) IsSingular(word string) bool {
 	return c.checkWord(c.irregularPlurals, c.irregularSingles, c.singularRules)(word)
 }
 
-// AddPluralRule -- Add a pluralization rule to the collection
+// AddPluralRule -- Add a pluralization rule to the collection.
 func (c *Client) AddPluralRule(rule string, replacement string) {
 	c.pluralRules = append(c.pluralRules, Rule{sanitizeRule(rule), replacement})
 }
 
-// AddSingularRule -- Add a singularization rule to the collection
+// AddSingularRule -- Add a singularization rule to the collection.
 func (c *Client) AddSingularRule(rule string, replacement string) {
 	c.singularRules = append(c.singularRules, Rule{sanitizeRule(rule), replacement})
 }
 
-// AddUncountableRule -- Add an uncountable word rule
+// AddUncountableRule -- Add an uncountable word rule.
 func (c *Client) AddUncountableRule(word string) {
-
 	if !isExpr(word) {
 		c.uncountables[strings.ToLower(word)] = true
 		return
@@ -107,9 +106,8 @@ func (c *Client) AddUncountableRule(word string) {
 	c.AddSingularRule(word, `$0`)
 }
 
-// AddIrregularRule -- Add an irregular word definition
+// AddIrregularRule -- Add an irregular word definition.
 func (c *Client) AddIrregularRule(single string, plural string) {
-
 	p := strings.ToLower(plural)
 	s := strings.ToLower(single)
 
@@ -118,9 +116,7 @@ func (c *Client) AddIrregularRule(single string, plural string) {
 }
 
 func (c *Client) replaceWord(replaceMap map[string]string, keepMap map[string]string, rules []Rule) func(w string) string { //nolint:lll
-
 	f := func(word string) string {
-
 		// Get the correct token and case restoration functions.
 		var token = strings.ToLower(word)
 
@@ -142,12 +138,13 @@ func (c *Client) replaceWord(replaceMap map[string]string, keepMap map[string]st
 }
 
 func (c *Client) checkWord(replaceMap map[string]string, keepMap map[string]string, rules []Rule) func(w string) bool {
-
 	f := func(word string) bool {
 		var token = strings.ToLower(word)
+
 		if _, ok := keepMap[token]; ok {
 			return true
 		}
+
 		if _, ok := replaceMap[token]; ok {
 			return false
 		}
@@ -159,8 +156,8 @@ func (c *Client) checkWord(replaceMap map[string]string, keepMap map[string]stri
 }
 
 func (c *Client) interpolate(str string, args []string) string {
-
 	lookup := map[string]string{}
+
 	for _, submatch := range c.interpolateExpr.FindAllStringSubmatch(str, -1) {
 		element, _ := strconv.Atoi(submatch[1])
 		lookup[submatch[0]] = args[element]
@@ -174,14 +171,12 @@ func (c *Client) interpolate(str string, args []string) string {
 }
 
 func (c *Client) replace(word string, rule Rule) string {
+	return rule.expression.ReplaceAllStringFunc(word, func(w string) string {
+		match := rule.expression.FindString(word)
+		index := rule.expression.FindStringIndex(word)[0]
+		args := rule.expression.FindAllStringSubmatch(word, -1)[0]
 
-	return rule.Expression.ReplaceAllStringFunc(word, func(w string) string {
-
-		match := rule.Expression.FindString(word)
-		index := rule.Expression.FindStringIndex(word)[0]
-		args := rule.Expression.FindAllStringSubmatch(word, -1)[0]
-
-		result := c.interpolate(rule.Replacement, args)
+		result := c.interpolate(rule.replacement, args)
 
 		if match == `` {
 			return restoreCase(word[index-1:index], result)
@@ -191,7 +186,6 @@ func (c *Client) replace(word string, rule Rule) string {
 }
 
 func (c *Client) sanitizeWord(token string, word string, rules []Rule) string {
-
 	// If empty string
 	if len(token) == 0 {
 		return word
@@ -204,7 +198,7 @@ func (c *Client) sanitizeWord(token string, word string, rules []Rule) string {
 	// Iterate over the sanitization rules and use the first one to match.
 	// NOTE: iterate rules array in reverse order specific => general rules
 	for i := len(rules) - 1; i >= 0; i-- {
-		if rules[i].Expression.MatchString(word) {
+		if rules[i].expression.MatchString(word) {
 			return c.replace(word, rules[i])
 		}
 	}
@@ -213,7 +207,6 @@ func (c *Client) sanitizeWord(token string, word string, rules []Rule) string {
 }
 
 func sanitizeRule(rule string) *regexp.Regexp {
-
 	if isExpr(rule) {
 		return regexp.MustCompile(rule)
 	}
@@ -222,7 +215,6 @@ func sanitizeRule(rule string) *regexp.Regexp {
 }
 
 func restoreCase(word string, token string) string {
-
 	// Tokens are an exact match.
 	if word == token {
 		return token
@@ -247,12 +239,12 @@ func restoreCase(word string, token string) string {
 	return strings.ToLower(token)
 }
 
-// isExpr -- helper to detect if string represents an expression by checking first character to be (
+// isExpr -- helper to detect if string represents an expression by checking first character to be `(`.
 func isExpr(s string) bool {
 	return s[:1] == `(`
 }
 
-func (c *Client) loadIrregularRules() {
+func (c *Client) loadIrregularRules() { //nolint:funlen
 	var irregularRules = []struct {
 		single string
 		plural string
@@ -274,6 +266,10 @@ func (c *Client) loadIrregularRules() {
 		{`has`, `have`},
 		{`this`, `these`},
 		{`that`, `those`},
+		{`my`, `our`},
+		{`its`, `their`},
+		{`his`, `their`},
+		{`her`, `their`},
 		// Words ending in with a consonant and `o`.
 		{`echo`, `echoes`},
 		{`dingo`, `dingoes`},
@@ -309,14 +305,16 @@ func (c *Client) loadIrregularRules() {
 		{`groove`, `grooves`},
 		{`pickaxe`, `pickaxes`},
 		{`passerby`, `passersby`},
+		{`canvas`, `canvases`},
+		{`sms`, `sms`},
 	}
+
 	for _, r := range irregularRules {
 		c.AddIrregularRule(r.single, r.plural)
 	}
 }
 
 func (c *Client) loadPluralizationRules() {
-
 	var pluralizationRules = []struct {
 		rule        string
 		replacement string
@@ -328,11 +326,11 @@ func (c *Client) loadPluralizationRules() {
 		{`(?i)(alias|[^aou]us|t[lm]as|gas|ris)$`, `$1es`},
 		{`(?i)(e[mn]u)s?$`, `$1s`},
 		{`(?i)([^l]ias|[aeiou]las|[ejzr]as|[iu]am)$`, `$1`},
-		{`(?i)(alumn|syllab|vir|radi|nucle|fung|cact|stimul|termin|bacill|foc|uter|loc|strat)(?:us|i)$`, `$1i`},
+		{`(?i)(alumn|syllab|vir|radi|nucle|fung|cact|stimul|termin|bacill|foc|uter|loc|strat)(?:us|i)$`, `$1i`}, //nolint:lll,misspell
 		{`(?i)(alumn|alg|vertebr)(?:a|ae)$`, `$1ae`},
 		{`(?i)(seraph|cherub)(?:im)?$`, `$1im`},
 		{`(?i)(her|at|gr)o$`, `$1oes`},
-		{`(?i)(agend|addend|millenni|dat|extrem|bacteri|desiderat|strat|candelabr|errat|ov|symposi|curricul|automat|quor)(?:a|um)$`, `$1a`}, //nolint:lll
+		{`(?i)(agend|addend|millenni|dat|extrem|bacteri|desiderat|strat|candelabr|errat|ov|symposi|curricul|automat|quor)(?:a|um)$`, `$1a`}, //nolint:lll,misspell
 		{`(?i)(apheli|hyperbat|periheli|asyndet|noumen|phenomen|criteri|organ|prolegomen|hedr|automat)(?:a|on)$`, `$1a`},
 		{`(?i)sis$`, `ses`},
 		{`(?i)(?:(kni|wi|li)fe|(ar|l|ea|eo|oa|hoo)f)$`, `$1$2ves`},
@@ -347,13 +345,13 @@ func (c *Client) loadPluralizationRules() {
 		{`(?i)m[ae]n$`, `men`},
 		{`thou`, `you`},
 	}
+
 	for _, r := range pluralizationRules {
 		c.AddPluralRule(r.rule, r.replacement)
 	}
 }
 
 func (c *Client) loadSingularizationRules() {
-
 	var singularizationRules = []struct {
 		rule        string
 		replacement string
@@ -363,7 +361,7 @@ func (c *Client) loadSingularizationRules() {
 		{`(?i)(wi|kni|(?:after|half|high|low|mid|non|night|[^\w]|^)li)ves$`, `$1fe`},
 		{`(?i)(ar|(?:wo|[ae])l|[eo][ao])ves$`, `$1f`},
 		{`(?i)ies$`, `y`},
-		{`(?i)(dg|ss|ois|lk|ok|wn|mb|th|ch|ec|oal|is|ec|ck|ix|sser|ts|wb)ies$`, `$1ie`},
+		{`(?i)(dg|ss|ois|lk|ok|wn|mb|th|ch|ec|oal|is|ck|ix|sser|ts|wb)ies$`, `$1ie`},
 		{`(?i)\b(l|(?:neck|cross|hog|aun)?t|coll|faer|food|gen|goon|group|hipp|junk|vegg|(?:pork)?p|charl|calor|cut)ies$`, `$1ie`}, //nolint:lll
 		{`(?i)\b(mon|smil)ies$`, `$1ey`},
 		{`(?i)\b((?:tit)?m|l)ice$`, `$1ouse`},
@@ -372,8 +370,8 @@ func (c *Client) loadSingularizationRules() {
 		{`(?i)(analy|diagno|parenthe|progno|synop|the|empha|cri|ne)(?:sis|ses)$`, `$1sis`},
 		{`(?i)(movie|twelve|abuse|e[mn]u)s$`, `$1`},
 		{`(?i)(test)(?:is|es)$`, `$1is`},
-		{`(?i)(alumn|syllab|vir|radi|nucle|fung|cact|stimul|termin|bacill|foc|uter|loc|strat)(?:us|i)$`, `$1us`},
-		{`(?i)(agend|addend|millenni|dat|extrem|bacteri|desiderat|strat|candelabr|errat|ov|symposi|curricul|quor)a$`, `$1um`},
+		{`(?i)(alumn|syllab|vir|radi|nucle|fung|cact|stimul|termin|bacill|foc|uter|loc|strat)(?:us|i)$`, `$1us`},              //nolint:lll,misspell
+		{`(?i)(agend|addend|millenni|dat|extrem|bacteri|desiderat|strat|candelabr|errat|ov|symposi|curricul|quor)a$`, `$1um`}, //nolint:lll,misspell
 		{`(?i)(apheli|hyperbat|periheli|asyndet|noumen|phenomen|criteri|organ|prolegomen|hedr|automat)a$`, `$1on`},
 		{`(?i)(alumn|alg|vertebr)ae$`, `$1a`},
 		{`(?i)(cod|mur|sil|vert|ind)ices$`, `$1ex`},
@@ -383,13 +381,13 @@ func (c *Client) loadSingularizationRules() {
 		{`(?i)(eau)x?$`, `$1`},
 		{`(?i)men$`, `man`},
 	}
+
 	for _, r := range singularizationRules {
 		c.AddSingularRule(r.rule, r.replacement)
 	}
 }
 
-func (c *Client) loadUncountableRules() {
-
+func (c *Client) loadUncountableRules() { //nolint:funlen
 	var uncountableRules = []string{
 		// Singular words with no plurals.
 		`adulthood`,

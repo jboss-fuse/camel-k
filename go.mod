@@ -11,7 +11,7 @@ require (
 	github.com/evanphx/json-patch v4.11.0+incompatible
 	github.com/fatih/camelcase v1.0.0
 	github.com/fatih/structs v1.1.0
-	github.com/gertd/go-pluralize v0.1.1
+	github.com/gertd/go-pluralize v0.2.1
 	github.com/go-logr/logr v0.4.0
 	github.com/golangplus/testing v1.0.0
 	github.com/google/go-github/v32 v32.1.0

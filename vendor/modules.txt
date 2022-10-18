@@ -114,7 +114,7 @@ github.com/fatih/structs
 github.com/form3tech-oss/jwt-go
 # github.com/fsnotify/fsnotify v1.4.9
 github.com/fsnotify/fsnotify
-# github.com/gertd/go-pluralize v0.1.1
+# github.com/gertd/go-pluralize v0.2.1
 ## explicit
 github.com/gertd/go-pluralize
 # github.com/go-kit/log v0.1.0
