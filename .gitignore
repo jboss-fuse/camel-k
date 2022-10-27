@@ -10,6 +10,9 @@
 /kamel-config.yaml
 /.kamel/kamel-config.yaml
 
+# Downstream target directory
+/target
+
 # Released Packages
 *.tar.gz
 
