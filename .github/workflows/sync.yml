@@ -59,7 +59,8 @@ jobs:
         with:
           upstream-org: "apache"
           upstream-repo: "camel-k"
-          upstream-branch: ${{ matrix.branch }} 
+          upstream-branch: ${{ matrix.branch }}
+          downstream-branch: ${{ matrix.branch }}
       - name: Vendor refresh
         uses: squakez/sync-go-vendor@v0
         with:
