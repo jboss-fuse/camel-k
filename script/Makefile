@@ -17,7 +17,7 @@ VERSIONFILE := pkg/util/defaults/defaults.go
 VERSION ?= 1.10.0
 LAST_RELEASED_IMAGE_NAME := red-hat-camel-k-operator
 LAST_RELEASED_VERSION := 1.8.1
-RUNTIME_VERSION ?= 1.12.0
+RUNTIME_VERSION ?= 1.15.0
 RHI_VERSION := 2023.Q1
 BUILDAH_VERSION := 1.14.0
 KANIKO_VERSION := 0.17.1
@@ -81,6 +81,13 @@ KAMELET_CATALOG_REPO_BRANCH := v0.7.1
 # When packaging artifacts into the docker image, you can "copy" them from local maven
 # or "download" them from Apache Snapshots and Maven Central
 PACKAGE_ARTIFACTS_STRATEGY := copy
+
+# When performing integration tests, it is not necessary to always execute build, especially
+# in e2e tests when lots of tests are being executed sequentially & the build has already taken place.
+# In this case, if DO_TEST_PREBUILD is set to false then TEST_PREBUILD will be set to blank
+# and those rules with a dependency on the build rule will no longer call it (see do-build)
+DO_TEST_PREBUILD ?= true
+TEST_PREBUILD = build
 
 # OLM (Operator Lifecycle Manager and Operator Hub): uncomment to override operator settings at build time
 GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/cmd.VersionVariant=Red Hat'
@@ -202,50 +209,74 @@ build: codegen build-resources build-kamel build-compile-integration-tests build
 
 ci-build: clean codegen set-module-version set-version check-licenses dir-licenses build-kamel cross-compile
 
-test: build
+do-build: gotestfmt-install
+ifeq ($(DO_TEST_PREBUILD),true)
+TEST_PREBUILD = build
+else
+TEST_PREBUILD =
+endif
+
+gotestfmt-install:
+ifeq (, $(shell command -v gotestfmt 2> /dev/null))
+	go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
+endif
+
+test: do-build
+	@echo "####### Running unit test..."
 	go test ./...
+	cd pkg/apis/camel && go test ./...
+	cd pkg/client/camel && go test ./...
+	cd pkg/kamelet/repository && go test ./...
 
-test-integration: build
+test-integration: do-build
+	FAILED=0; STAGING_RUNTIME_REPO="$(STAGING_RUNTIME_REPO)"; \
+	go test -timeout 60m -v ./e2e/global/common -tags=integration $(TEST_INTEGRATION_COMMON_RUN) -json 2>&1 | gotestfmt || FAILED=1; \
+	go test -timeout 60m -v ./e2e/global/common/build -tags=integration $(TEST_INTEGRATION_COMMON_BUILD_RUN) -json 2>&1 | gotestfmt || FAILED=1; \
+	go test -timeout 60m -v ./e2e/global/common/config -tags=integration $(TEST_INTEGRATION_COMMON_CONFIG_RUN) -json 2>&1 | gotestfmt || FAILED=1; \
+	go test -timeout 60m -v ./e2e/global/common/languages -tags=integration $(TEST_INTEGRATION_COMMON_LANG_RUN) -json 2>&1 | gotestfmt || FAILED=1; \
+	go test -timeout 60m -v ./e2e/global/common/traits -tags=integration $(TEST_INTEGRATION_COMMON_TRAITS_RUN) -json 2>&1 | gotestfmt || FAILED=1; \
+	exit $${FAILED}
+
+test-knative: do-build
 	STAGING_RUNTIME_REPO="$(STAGING_RUNTIME_REPO)" \
-	go test -timeout 60m -v ./e2e/common -tags=integration && \
-	go test -timeout 60m -v ./e2e/common/build -tags=integration && \
-	go test -timeout 60m -v ./e2e/common/cli -tags=integration && \
-	go test -timeout 60m -v ./e2e/common/config -tags=integration && \
-	go test -timeout 60m -v ./e2e/common/languages -tags=integration && \
-	go test -timeout 60m -v ./e2e/common/traits -tags=integration
+	go test -timeout 60m -v ./e2e/global/knative -tags=integration $(TEST_KNATIVE_RUN) -json 2>&1 | gotestfmt
 
-test-knative: build
+test-builder: do-build
 	STAGING_RUNTIME_REPO="$(STAGING_RUNTIME_REPO)" \
-	go test -timeout 60m -v ./e2e/knative -tags=integration
+	go test -timeout 60m -v ./e2e/global/builder -tags=integration $(TEST_BUILDER_RUN) -json 2>&1 | gotestfmt
 
-test-builder: build
+test-service-binding: do-build
 	STAGING_RUNTIME_REPO="$(STAGING_RUNTIME_REPO)" \
-	go test -timeout 60m -v ./e2e/builder -tags=integration
+	go test -timeout 60m -v ./e2e/global/service-binding -tags=integration $(TEST_SERVICE_RUN) -json 2>&1 | gotestfmt
 
-test-local: build
+test-local: do-build
 	STAGING_RUNTIME_REPO="$(STAGING_RUNTIME_REPO)" \
-	go test -timeout 60m -v ./e2e/local -tags=integration
+	go test -timeout 30m -v ./e2e/local -tags=integration $(TEST_LOCAL_RUN) -json 2>&1 | gotestfmt
 
-test-kamel-cli: build
+test-registry-maven-wagon: do-build
 	STAGING_RUNTIME_REPO="$(STAGING_RUNTIME_REPO)" \
-	go test -timeout 60m -v ./e2e/common/cli -tags=integration
+	go test -timeout 60m -v ./e2e/global/registry -tags=integration $(TEST_REGISTRY_MAVEN_WAGON_RUN) -json 2>&1 | gotestfmt
 
-test-kustomize: build
+###############################
+#
+# NAMESPACED INSTALL TESTS
+#
+###############################
+
+test-install: do-build
+	FAILED=0; STAGING_RUNTIME_REPO="$(STAGING_RUNTIME_REPO)"; \
+	go test -timeout 60m -v ./e2e/namespace/install/ -tags=integration $(TEST_INSTALL_RUN) -json 2>&1 | gotestfmt || FAILED=1; \
+	go test -timeout 60m -v ./e2e/namespace/install/cli -tags=integration $(TEST_INSTALL_CLI_RUN) -json 2>&1 | gotestfmt || FAILED=1; \
+	go test -timeout 60m -v ./e2e/namespace/install/kustomize -tags=integration $(TEST_INSTALL_KUSTOMIZE_RUN) -json 2>&1 | gotestfmt || FAILED=1; \
+	exit $${FAILED}
+
+test-quarkus-native: do-build
 	STAGING_RUNTIME_REPO="$(STAGING_RUNTIME_REPO)" \
-	go test -timeout 60m -v ./e2e/common/kustomize -tags=integration
+	go test -timeout 130m -v ./e2e/namespace/native -tags=integration $(TEST_QUARKUS_RUN) -json 2>&1 | gotestfmt
 
-test-quarkus-native: build
+test-upgrade: do-build
 	STAGING_RUNTIME_REPO="$(STAGING_RUNTIME_REPO)" \
-	go test -timeout 60m -v ./e2e/native -tags=integration
-
-test-service-binding: build
-	STAGING_RUNTIME_REPO="$(STAGING_RUNTIME_REPO)" \
-	go test -timeout 60m -v ./e2e/service-binding -tags=integration
-
-test-upgrade: build
-	STAGING_RUNTIME_REPO="$(STAGING_RUNTIME_REPO)" \
-	go test -timeout 60m -v ./e2e/upgrade -tags=integration
-
+	go test -timeout 60m -v ./e2e/namespace/upgrade -tags=integration $(TEST_UPGRADE_RUN) -json 2>&1 | gotestfmt
 build-kamel:
 # Ensure the binary is statically linked when building on Linux due to ABI changes in newer glibc 2.32, otherwise
 # it would not run on older versions. See https://github.com/apache/camel-k/pull/2141#issuecomment-800990117
@@ -272,9 +303,9 @@ build-submodules:
 	./script/build_submodules.sh
 
 build-compile-integration-tests:
-	go test -c -tags="integration" ./e2e/common
-	go test -c -tags="integration" ./e2e/knative
-	go test -c -tags="integration" ./e2e/builder
+	go test -run nope -tags="integration" ./e2e/global/... > /dev/null
+	go test -run nope -tags="integration" ./e2e/local/... > /dev/null
+	go test -run nope -tags="integration" ./e2e/namespace/... > /dev/null
 
 clean:
 	# disable gomodules when executing go clean:
@@ -315,28 +346,24 @@ check-licenses:
 check-platform:
 	./script/check_platform.sh
 
+# The below are dependencies needed for maven structured logs. We must bundle into the final container image.
 maven-overlay:
+	@echo "####### Preparing maven dependencies bundle..."
 	mkdir -p build/_maven_overlay
-	./script/maven_overlay.sh build/_maven_overlay
+	./script/maven_overlay.sh -s "$(STAGING_RUNTIME_REPO)" -d "$(CAMEL_K_RUNTIME_DIR)" $(RUNTIME_VERSION) build/_maven_overlay
 
-images: bundle-kamelets test maven-overlay
-	mkdir -p build/_maven_output
+kamel-overlay:
+	@echo "####### Copying kamel CLI to output build directory..."
 	mkdir -p build/_output/bin
-ifneq ($(shell uname -s 2>/dev/null || echo Unknown),Linux)
-	GOOS=linux go build $(GOFLAGS) -o build/_output/bin/kamel ./cmd/kamel/*.go
-else
 	cp kamel build/_output/bin
-endif
+
+images: build kamel-overlay maven-overlay bundle-kamelets
+	@echo "####### Building Camel K operator container image..."
+	mkdir -p build/_maven_output
 	docker build -t $(CUSTOM_IMAGE):$(CUSTOM_VERSION) -f build/Dockerfile .
 
-images-dev: bundle-kamelets test package-artifacts maven-overlay
-	mkdir -p build/_maven_output
-	mkdir -p build/_output/bin
-ifneq ($(shell uname -s 2>/dev/null || echo Unknown),Linux)
-	GOOS=linux go build $(GOFLAGS) -o build/_output/bin/kamel ./cmd/kamel/*.go
-else
-	cp kamel build/_output/bin
-endif
+images-dev: build kamel-overlay maven-overlay bundle-kamelets package-artifacts
+	@echo "####### Building Camel K operator container development image..."
 	docker build -t $(CUSTOM_IMAGE):$(CUSTOM_VERSION) -f build/Dockerfile .
 
 images-push:
@@ -370,7 +397,8 @@ package-examples:
 	./script/package_examples.sh $(CUSTOM_VERSION)
 
 package-artifacts:
-	./script/package_maven_artifacts.sh $(RUNTIME_VERSION) $(PACKAGE_ARTIFACTS_STRATEGY) $(STAGING_RUNTIME_REPO)
+	# useful for development purpose only in order to include any local development runtime dependency
+	./script/package_maven_artifacts.sh -s "$(STAGING_RUNTIME_REPO)" -d "$(CAMEL_K_RUNTIME_DIR)" $(RUNTIME_VERSION)
 
 release: clean codegen set-module-version set-version build-resources check-licenses build images images-push cross-compile package-examples git-tag
 
