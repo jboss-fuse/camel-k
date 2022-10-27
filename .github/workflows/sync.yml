@@ -24,6 +24,9 @@ on:
 
 jobs:
   sync:
+    strategy:
+      matrix:
+        branch: ["release-1.8.x", "release-1.9.x", "release-1.10.x"]
     runs-on: ubuntu-20.04
     steps:
       - name: Set up JDK 11
@@ -41,7 +44,7 @@ jobs:
           # We need to provide either a Personal Access Token or a SSH Key as suggested in
           # https://medium.com/prompt/trigger-another-github-workflow-without-using-a-personal-access-token-f594c21373ef
           ssh-key: "${{ secrets.PUSH_KEY }}"
-          ref: ${{ github.ref }}
+          ref: ${{ matrix.branch }}
           fetch-depth: 0
           persist-credentials: true
       - name: Git set bot identity
@@ -56,7 +59,7 @@ jobs:
         with:
           upstream-org: "apache"
           upstream-repo: "camel-k"
-          upstream-branch: ${{github.ref_name}} 
+          upstream-branch: ${{ matrix.branch }} 
       - name: Vendor refresh
         uses: squakez/sync-go-vendor@v0
         with:
@@ -67,6 +70,6 @@ jobs:
           init-directory: "ci/downstream"          
       - name: Git push          
         run: |
-          git push origin HEAD:${{ github.ref }}
+          git push origin HEAD:${{ matrix.branch }}
 
 
