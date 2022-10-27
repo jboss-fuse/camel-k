@@ -177,7 +177,7 @@ codegen:
 
 	gofmt -w pkg/util/defaults/defaults.go
 
-generate: generate-deepcopy generate-crd generate-client generate-doc generate-json-schema generate-keda generate-strimzi
+generate: generate-deepcopy generate-crd generate-client generate-doc generate-keda generate-strimzi
 
 generate-client:
 	./script/gen_client.sh
@@ -191,10 +191,6 @@ generate-doc:
 generate-deepcopy: controller-gen
 	cd pkg/apis/camel && $(CONTROLLER_GEN) paths="./..." object
 
-generate-json-schema:
-	# Skip since the YAML DSL schema has been moved to apache/camel
-	#./script/gen_json_schema.sh $(RUNTIME_VERSION) $(STAGING_RUNTIME_REPO)
-
 generate-keda:
 	cd addons/keda/duck && $(CONTROLLER_GEN) paths="./..." object
 
@@ -202,18 +198,11 @@ generate-strimzi:
 	cd addons/strimzi/duck && $(CONTROLLER_GEN) paths="./..." object
 	./script/gen_client_strimzi.sh
 
-build: build-resources build-kamel build-compile-integration-tests build-submodules
+build: codegen build-resources build-kamel build-compile-integration-tests build-submodules
 
 ci-build: clean codegen set-module-version set-version check-licenses dir-licenses build-kamel cross-compile
 
-do-build:
-ifeq ($(DO_TEST_PREBUILD),true)
-TEST_PREBUILD = build
-else
-TEST_PREBUILD =
-endif
-
-test: do-build
+test: build
 	go test ./...
 
 test-integration: build
@@ -267,7 +256,7 @@ else
 endif
 
 build-resources:
-	./script/build_catalog.sh $(RUNTIME_VERSION) -Dcatalog.file=camel-catalog-$(RUNTIME_VERSION).yaml -Dcatalog.runtime=quarkus -Dstaging.repo="$(STAGING_RUNTIME_REPO)"
+	./script/get_catalog.sh $(RUNTIME_VERSION) $(STAGING_RUNTIME_REPO)
 	go generate ./pkg/...
 
 bundle-kamelets:
