@@ -100,7 +100,7 @@ GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/kamelet/repository.DefaultRemoteR
 GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/install.KamelCLIDownloadName=redhat-kamel-cli'
 GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/install.KamelCLIDownloadDisplayName=kamel - Red Hat Integration - Camel K - Command Line Interface'
 GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/install.KamelCLIDownloadDescription=CLI for Red Hat Integration - Camel K. The \"kamel\" binary can be used to both configure the cluster and run integrations. Once you have downloaded the \"kamel\" binary, log into the cluster using the \"oc\" client tool and start using the \"kamel\" CLI.'
-GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/util/label.AdditionalLabels=com.company=Red_Hat,rht.prod_name=Red_Hat_Integration,rht.prod_ver=2023.Q1,rht.comp=Camel-K,rht.comp_ver=$(VERSION),rht.subcomp=token_integration_name,rht.subcomp_t=application'
+GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/util/label.AdditionalLabels=com.company=Red_Hat,rht.prod_name=Red_Hat_Integration,rht.prod_ver=$(RHI_VERSION),rht.comp=Camel-K,rht.comp_ver=$(VERSION),rht.subcomp=token_integration_name,rht.subcomp_t=application'
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
