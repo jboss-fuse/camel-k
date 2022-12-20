@@ -26,7 +26,7 @@ jobs:
   sync:
     strategy:
       matrix:
-        branch: ["release-1.8.x", "release-1.9.x", "release-1.10.x"]
+        branch: ["release-1.8.x", "release-1.9.x", "release-1.10.x", "release-1.11.x"]
     runs-on: ubuntu-20.04
     steps:
       - name: Set up JDK 11
@@ -50,7 +50,7 @@ jobs:
       - name: Git set bot identity
         env:
           CI_USER: "github-actions[bot]"
-          CI_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"             
+          CI_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
         run: |
           git config --local user.email "$CI_EMAIL"
           git config --local user.name "$CI_USER"
@@ -68,8 +68,8 @@ jobs:
       - name: Pin init directory divergencies
         uses: squakez/sync-pin-divergencies@v0
         with:
-          init-directory: "ci/downstream"          
-      - name: Git push          
+          init-directory: "ci/downstream"
+      - name: Git push
         run: |
           git push origin HEAD:${{ matrix.branch }}
 
