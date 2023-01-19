@@ -16,7 +16,7 @@
 VERSIONFILE := pkg/util/defaults/defaults.go
 VERSION ?= 1.10.0
 LAST_RELEASED_IMAGE_NAME := red-hat-camel-k-operator
-LAST_RELEASED_VERSION := 1.8.1
+LAST_RELEASED_VERSION := 1.8.2
 RUNTIME_VERSION ?= 1.15.0
 RHI_VERSION := 2022.Q4
 BUILDAH_VERSION := 1.14.0
@@ -76,7 +76,7 @@ STAGING_RUNTIME_REPO :=
 INSTALL_DEFAULT_KAMELETS ?= true
 KAMELET_CATALOG_REPO := https://github.com/apache/camel-kamelets.git
 # Optional branch for the default Kamelet catalog (change this to a tag before release)
-KAMELET_CATALOG_REPO_BRANCH := v0.7.1
+KAMELET_CATALOG_REPO_TAG := v0.7.1
 
 # When packaging artifacts into the docker image, you can "copy" them from local maven
 # or "download" them from Apache Snapshots and Maven Central
