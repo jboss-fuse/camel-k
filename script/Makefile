@@ -89,17 +89,17 @@ DO_TEST_PREBUILD ?= true
 TEST_PREBUILD = build
 
 # OLM (Operator Lifecycle Manager and Operator Hub): uncomment to override operator settings at build time
-GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/cmd.VersionVariant=Red Hat'
-GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/install.KamelCLIDownloadURLTemplate=https://mirror.openshift.com/pub/openshift-v4/clients/camel-k/%s/camel-k-client-%s-%s-64bit.tar.gz'
-GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/util/olm.DefaultOperatorName=$(LAST_RELEASED_IMAGE_NAME)'
-GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/util/olm.DefaultPackage=$(PACKAGE)'
-GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/util/olm.DefaultChannel=$(DEFAULT_CHANNEL)'
-GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/util/olm.DefaultSource=redhat-operators'
-GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/util/maven.DefaultMavenRepositories=https://maven.repository.redhat.com/ga@id=redhat.ga,https://repository.jboss.org/nexus/content/groups/ea@id=jboss.ea,https://maven.repository.redhat.com/earlyaccess/all@id=redhat.ea,https://repo.maven.apache.org/maven2@id=central'
-GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/kamelet/repository.DefaultRemoteRepository=none'
-GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/install.KamelCLIDownloadName=redhat-kamel-cli'
-GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/install.KamelCLIDownloadDisplayName=kamel - Red Hat Integration - Camel K - Command Line Interface'
-GOLDFLAGS += -X 'github.com/apache/camel-k/pkg/install.KamelCLIDownloadDescription=CLI for Red Hat Integration - Camel K. The \"kamel\" binary can be used to both configure the cluster and run integrations. Once you have downloaded the \"kamel\" binary, log into the cluster using the \"oc\" client tool and start using the \"kamel\" CLI.'
+GOLDFLAGS += -X 'github.com/apache/camel-k/v2/pkg/cmd.VersionVariant=Red Hat'
+GOLDFLAGS += -X 'github.com/apache/camel-k/v2/pkg/install.KamelCLIDownloadURLTemplate=https://mirror.openshift.com/pub/openshift-v4/clients/camel-k/%s/camel-k-client-%s-%s-64bit.tar.gz'
+GOLDFLAGS += -X 'github.com/apache/camel-k/v2/pkg/util/olm.DefaultOperatorName=$(LAST_RELEASED_IMAGE_NAME)'
+GOLDFLAGS += -X 'github.com/apache/camel-k/v2/pkg/util/olm.DefaultPackage=$(PACKAGE)'
+GOLDFLAGS += -X 'github.com/apache/camel-k/v2/pkg/util/olm.DefaultChannel=$(DEFAULT_CHANNEL)'
+GOLDFLAGS += -X 'github.com/apache/camel-k/v2/pkg/util/olm.DefaultSource=redhat-operators'
+GOLDFLAGS += -X 'github.com/apache/camel-k/v2/pkg/util/maven.DefaultMavenRepositories=https://maven.repository.redhat.com/ga@id=redhat.ga,https://repository.jboss.org/nexus/content/groups/ea@id=jboss.ea,https://maven.repository.redhat.com/earlyaccess/all@id=redhat.ea,https://repo.maven.apache.org/maven2@id=central'
+GOLDFLAGS += -X 'github.com/apache/camel-k/v2/pkg/kamelet/repository.DefaultRemoteRepository=none'
+GOLDFLAGS += -X 'github.com/apache/camel-k/v2/pkg/install.KamelCLIDownloadName=redhat-kamel-cli'
+GOLDFLAGS += -X 'github.com/apache/camel-k/v2/pkg/install.KamelCLIDownloadDisplayName=kamel - Red Hat Integration - Camel K - Command Line Interface'
+GOLDFLAGS += -X 'github.com/apache/camel-k/v2/pkg/install.KamelCLIDownloadDescription=CLI for Red Hat Integration - Camel K. The \"kamel\" binary can be used to both configure the cluster and run integrations. Once you have downloaded the \"kamel\" binary, log into the cluster using the \"oc\" client tool and start using the \"kamel\" CLI.'
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -110,7 +110,7 @@ endif
 
 # Build
 ifdef GIT_COMMIT
-GOLDFLAGS += -X github.com/apache/camel-k/pkg/util/defaults.GitCommit=$(GIT_COMMIT)
+GOLDFLAGS += -X github.com/apache/camel-k/v2/pkg/util/defaults.GitCommit=$(GIT_COMMIT)
 else
 $(warning Could not retrieve a valid Git Commit)
 endif
@@ -413,6 +413,12 @@ cross-compile:
 	# we must wrap the goldflags parameters with quotes as they will need to
 	# be processed as a single argument by the cross compile script
 	./script/cross_compile.sh $(CUSTOM_VERSION) $(subst ","\",$(GOFLAGS))
+	# the upstream naming convention may be different, we adapt in this section
+	mv camel-k-client-$(CUSTOM_VERSION)-linux-amd64.tar.gz camel-k-client-$(CUSTOM_VERSION)-linux-64bit.tar.gz
+	mv camel-k-client-$(CUSTOM_VERSION)-darwin-amd64.tar.gz camel-k-client-$(CUSTOM_VERSION)-mac-64bit.tar.gz
+	mv camel-k-client-$(CUSTOM_VERSION)-windows-amd64.tar.gz camel-k-client-$(CUSTOM_VERSION)-windows-64bit.tar.gz
+	rm camel-k-client-$(CUSTOM_VERSION)-linux-arm64.tar.gz
+	rm camel-k-client-$(CUSTOM_VERSION)-darwin-arm64.tar.gz
 
 package-examples:
 	./script/package_examples.sh $(CUSTOM_VERSION)
