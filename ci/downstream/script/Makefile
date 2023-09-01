@@ -203,9 +203,19 @@ generate-strimzi:
 	cd addons/strimzi/duck && $(CONTROLLER_GEN) paths="./..." object
 	./script/gen_client_strimzi.sh
 
-build: codegen build-resources build-kamel build-compile-integration-tests build-submodules
+codegen-tools-install: controller-gen
+	@# We must force the installation to make sure we are using the correct version
+	@# Note: as there is no --version in the tools, we cannot rely on cached local versions
+	@echo "Installing k8s.io/code-generator tools with version $(CODEGEN_VERSION)"
+	#go install k8s.io/code-generator/cmd/applyconfiguration-gen@$(CODEGEN_VERSION)
+	go install github.com/astefanutti/code-generator/cmd/applyconfiguration-gen@pr-144-install
+	go install k8s.io/code-generator/cmd/client-gen@$(CODEGEN_VERSION)
+	go install k8s.io/code-generator/cmd/lister-gen@$(CODEGEN_VERSION)
+	go install k8s.io/code-generator/cmd/informer-gen@$(CODEGEN_VERSION)
 
-ci-build: clean codegen set-module-version set-version check-licenses dir-licenses build-kamel cross-compile
+build: codegen build-resources test build-kamel build-compile-integration-tests
+
+ci-build: clean codegen set-version check-licenses dir-licenses build-kamel cross-compile
 
 do-build: gotestfmt-install
 ifeq ($(DO_TEST_PREBUILD),true)
@@ -222,11 +232,16 @@ endif
 test: do-build
 	@echo "####### Running unit test..."
 	go test ./...
-	cd pkg/apis/camel && go test ./...
-	cd pkg/client/camel && go test ./...
-	cd pkg/kamelet/repository && go test ./...
 
-test-integration: do-build
+test-fmt: do-build
+	@echo "####### Running unit test..."
+	go test -v ./... -json 2>&1 | gotestfmt
+
+#
+# Common tests that do not require any customized operator setting. They can leverage a unique namespaced operator installation to reduce
+# the time to complete (they are used also as smoke test for nightly release)
+#
+test-common: do-build
 	FAILED=0; STAGING_RUNTIME_REPO="$(STAGING_RUNTIME_REPO)"; \
 	go test -timeout 60m -v ./e2e/global/common -tags=integration $(TEST_INTEGRATION_COMMON_RUN) -json 2>&1 | gotestfmt || FAILED=1; \
 	go test -timeout 60m -v ./e2e/global/common/build -tags=integration $(TEST_INTEGRATION_COMMON_BUILD_RUN) -json 2>&1 | gotestfmt || FAILED=1; \
@@ -298,9 +313,6 @@ endif
 endif
 	./script/bundle_kamelets.sh $(KAMELET_CATALOG_REPO) $(KAMELET_CATALOG_REPO_TAG)
 
-build-submodules:
-	./script/build_submodules.sh
-
 build-compile-integration-tests:
 	go test -run nope -tags="integration" ./e2e/...
 
@@ -319,10 +331,22 @@ clean:
 	rm -rf camel-k-client-*.tar.gz
 	rm -rf camel-k-examples-*.tar.gz
 	rm -rf bundle
-ifneq ($(CSV_PATH), $(DEFAULT_CSV))
-ifneq ("$(wildcard $(CSV_PATH))","")
-	mv $(CSV_PATH) $(DEFAULT_CSV)
-endif
+	rm -rf $(INDEX_DIR) $(INDEX_DIR).Dockerfile
+
+dep:
+	@echo "Cleaning dependencies..."
+	go mod tidy
+
+detect-os:
+ifeq '$(findstring ;,$(PATH))' ';'
+OS := Windows
+OS_LOWER := windows
+else
+OS := $(shell echo $$(uname 2>/dev/null) || echo Unknown)
+OS := $(patsubst CYGWIN%,Cygwin,$(OS))
+OS := $(patsubst MSYS%,MSYS,$(OS))
+OS := $(patsubst MINGW%,MSYS,$(OS))
+OS_LOWER := $(shell echo $(OS) | tr '[:upper:]' '[:lower:]')
 endif
 
 dep:
@@ -403,9 +427,6 @@ get-last-released-version:
 set-version:
 	./script/set_version.sh $(CUSTOM_VERSION) $(CUSTOM_IMAGE)
 
-set-module-version:
-	./script/set_go_modules_version.sh $(CUSTOM_VERSION)
-
 git-tag:
 	./script/git_tag.sh $(CUSTOM_VERSION) $(RELEASE_GIT_REMOTE)
 
@@ -420,18 +441,16 @@ cross-compile:
 	rm camel-k-client-$(CUSTOM_VERSION)-linux-arm64.tar.gz
 	rm camel-k-client-$(CUSTOM_VERSION)-darwin-arm64.tar.gz
 
-package-examples:
-	./script/package_examples.sh $(CUSTOM_VERSION)
+release: clean codegen set-version build-resources check-licenses images images-push cross-compile git-tag
 
-package-artifacts:
-	# useful for development purpose only in order to include any local development runtime dependency
-	./script/package_maven_artifacts.sh -s "$(STAGING_RUNTIME_REPO)" -d "$(CAMEL_K_RUNTIME_DIR)" $(RUNTIME_VERSION)
+release-staging: clean codegen set-version build-resources check-licenses images-all images-push-staging cross-compile fabric8-crds git-tag
 
-release: clean codegen set-module-version set-version build-resources check-licenses build images images-push cross-compile package-examples git-tag
+# Build images
+images-nightly: clean codegen set-version build-resources images
 
-release-staging: clean codegen set-module-version set-version build-resources check-licenses build images images-push-staging cross-compile package-examples git-tag
+release-staging: clean codegen set-version build-resources check-licenses build images images-push-staging cross-compile package-examples git-tag
 
-release-nightly: clean codegen set-module-version set-version build-resources build images images-push cross-compile package-examples
+release-nightly: clean codegen set-version build-resources build images images-push cross-compile package-examples
 
 release-helm:
 	./script/release_helm.sh
@@ -444,7 +463,8 @@ install-minikube:
 get-staging-repo:
 	@echo $(or ${STAGING_RUNTIME_REPO},https://repository.apache.org/content/repositories/snapshots@id=apache-snapshots@snapshots)
 
-.PHONY: build build-kamel build-resources dep codegen images images-dev images-push images-push-staging test check test-integration clean release cross-compile package-examples set-version git-tag release-notes check-licenses generate-deepcopy generate-client generate-doc build-resources release-helm release-staging release-nightly get-staging-repo get-version build-submodules set-module-version bundle-kamelets generate-keda generate-strimzi
+.PHONY: do-build build build-kamel build-resources dep codegen images images-push images-push-staging test check clean release cross-compile package-examples set-version git-tag release-notes check-licenses build-resources release-helm release-staging release-nightly get-staging-repo get-version bundle-kamelets
+.PHONY: controller-gen kubectl kustomize operator-sdk opm
 
 # find or download controller-gen if necessary
 controller-gen:
