@@ -453,7 +453,7 @@ release-staging: clean codegen set-version build-resources check-licenses build 
 release-nightly: clean codegen set-version build-resources build images images-push cross-compile package-examples
 
 release-helm:
-	./script/release_helm.sh
+	./script/release_helm.sh ${VERSION}
 
 install-crc:
 	./script/install_crc.sh $(CUSTOM_VERSION)
