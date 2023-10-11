@@ -14,9 +14,9 @@
 # limitations under the License.
 
 VERSIONFILE := pkg/util/defaults/defaults.go
-VERSION ?= 1.10.3
+VERSION ?= 1.10.4
 LAST_RELEASED_IMAGE_NAME := red-hat-camel-k-operator
-LAST_RELEASED_VERSION := 1.10.2
+LAST_RELEASED_VERSION := 1.10.3
 RUNTIME_VERSION ?= 1.15.2
 BUILDAH_VERSION := 1.14.0
 KANIKO_VERSION := 0.17.1
@@ -36,7 +36,7 @@ IMAGE_NAME := registry-proxy.engineering.redhat.com/rh-osbs/integration-camel-k-
 # - need to preserve original image and version as used in other files
 #
 CUSTOM_IMAGE ?= $(IMAGE_NAME)
-CUSTOM_VERSION ?= 1.10.3
+CUSTOM_VERSION ?= 1.10.4
 OPERATOR_VERSION := $(subst -SNAPSHOT,,$(CUSTOM_VERSION))
 CUSTOM_TAG ?= $(OPERATOR_VERSION)
 
