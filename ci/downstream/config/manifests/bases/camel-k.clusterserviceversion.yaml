@@ -22,7 +22,7 @@ metadata:
     capabilities: Full Lifecycle
     categories: Integration & Delivery
     certified: "false"
-    containerImage: registry-proxy.engineering.redhat.com/rh-osbs/integration-camel-k-rhel8-operator:1.10.3
+    containerImage: registry-proxy.engineering.redhat.com/rh-osbs/integration-camel-k-rhel8-operator:1.10.4
     createdAt: 2022-09-21T12:01:32Z
     description: Red Hat Integration - Camel K is a lightweight integration platform,
       born on Kubernetes, with serverless superpowers.
