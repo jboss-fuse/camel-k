@@ -25,7 +25,6 @@ import (
 	v1alpha1 "github.com/apache/camel-k/pkg/apis/camel/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -37,9 +36,9 @@ type FakeKamelets struct {
 	ns   string
 }
 
-var kameletsResource = schema.GroupVersionResource{Group: "camel.apache.org", Version: "v1alpha1", Resource: "kamelets"}
+var kameletsResource = v1alpha1.SchemeGroupVersion.WithResource("kamelets")
 
-var kameletsKind = schema.GroupVersionKind{Group: "camel.apache.org", Version: "v1alpha1", Kind: "Kamelet"}
+var kameletsKind = v1alpha1.SchemeGroupVersion.WithKind("Kamelet")
 
 // Get takes name of the kamelet, and returns the corresponding kamelet object, and an error if there is any.
 func (c *FakeKamelets) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Kamelet, err error) {
