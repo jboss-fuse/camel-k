@@ -163,4 +163,14 @@ config/**/*.gen.tmpl
 config/**/*.gen.yaml
 config/**/*.gen.json
 
-release/*-installer*
+*-installer*
+
+# Fabric8 CRDs
+java/target
+pkg/resources/resources.go
+
+# MAC OS files
+.DS_Store
+
+# Audit logs file
+logs.txt
