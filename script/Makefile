@@ -371,7 +371,7 @@ check-platform:
 maven-overlay:
 	@echo "####### Preparing maven dependencies bundle..."
 	mkdir -p build/_maven_overlay
-	./script/maven_overlay.sh -s "$(STAGING_RUNTIME_REPO)" -d "$(CAMEL_K_RUNTIME_DIR)" $(RUNTIME_VERSION) build/_maven_overlay
+	./script/maven_overlay.sh build/_maven_overlay
 
 kamel-overlay:
 	@echo "####### Copying kamel CLI to output build directory..."
