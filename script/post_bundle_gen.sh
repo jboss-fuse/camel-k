@@ -55,7 +55,7 @@ LABEL com.redhat.delivery.operator.bundle=true
 
 # Tells the pipeline which versions of OpenShift the operator supports.
 # This is used to control which index images should include this operator.
-LABEL com.redhat.openshift.versions="v4.11"
+LABEL com.redhat.openshift.versions="v4.12"
 
 # The rest of these labels are copies of the same content in annotations.yaml and are needed by OLM
 # Note the package name and channels which are very important!
