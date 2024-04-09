@@ -172,7 +172,7 @@ spec:
   - email: pcongius@redhat.com
     name: Pasquale Congiusti
   maturity: alpha
-  minKubeVersion: 1.14.0
+  minKubeVersion: 1.24.0
   provider:
     name: Red Hat
     url: https://access.redhat.com/products/red-hat-integration

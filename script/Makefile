@@ -538,6 +538,9 @@ ifneq ($(origin PACKAGE), undefined)
 BUNDLE_PACKAGE := --package=$(PACKAGE)
 endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL) $(BUNDLE_PACKAGE)
+# TODO automate these configuration retrieving the content from go.mod
+BUNDLE_METADATA_OPENSHIFT_VERSION ?= "v4.12"
+MIN_KUBE_VERSION ?= "1.24.0"
 
 #
 # Tailor the manifest according to default values for this project
@@ -553,6 +556,7 @@ pre-bundle:
 	@sed -i 's/^  displayName: .*/  displayName: $(CSV_DISPLAY_NAME)/' $(CSV_PATH)
 	@sed -i 's/^  replaces: .*/  replaces: $(CSV_REPLACES)/' $(CSV_PATH)
 	@sed -i 's/^  version: .*/  version: $(CSV_VERSION)/' $(CSV_PATH)
+	@sed -i 's/^  minKubeVersion: .*/  minKubeVersion: $(MIN_KUBE_VERSION)/' $(CSV_PATH)
 
 bundle: set-version generate-crd kustomize operator-sdk pre-bundle $(BUNDLE_CAMEL_APIS)
 	@# Sets the operator image to the preferred image:tag
@@ -570,6 +574,9 @@ else
 endif
 	@# Adds the licence headers to the csv file
 	./script/add_license.sh bundle/manifests ./script/headers/yaml.txt
+# Rename the CSV name to conform with the existing released operator versions
+# This cannot happen in pre-bundle as the operator-sdk generation expects a CSV name the same as PACKAGE
+	@echo "  com.redhat.openshift.versions : $(BUNDLE_METADATA_OPENSHIFT_VERSION)" >> ./bundle/metadata/annotations.yaml
 	$(OPERATOR_SDK) bundle validate ./bundle
 # operator-sdk requires the name of the operator to be the PACKAGE
 # However, the historical name of the operator has the suffix 'operator' so this should
