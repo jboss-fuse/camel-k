@@ -17,7 +17,7 @@ VERSIONFILE := pkg/util/defaults/defaults.go
 VERSION ?= 2.3.0
 LAST_RELEASED_IMAGE_NAME := red-hat-camel-k-operator
 LAST_RELEASED_VERSION := 2.2.0
-RUNTIME_VERSION ?= 3.8.1
+DEFAULT_RUNTIME_VERSION ?= 3.8.1
 BUILDAH_VERSION := 1.14.0
 KANIKO_VERSION := 0.17.1
 INSTALL_DEFAULT_KAMELETS := true
@@ -27,6 +27,7 @@ KUSTOMIZE_VERSION := v4.5.4
 BASE_IMAGE ?= adoptopenjdk/openjdk11:slim
 LOCAL_REPOSITORY := /tmp/artifacts/m2
 IMAGE_NAME := registry-proxy.engineering.redhat.com/rh-osbs/integration-camel-k-rhel8-operator
+OPENSHIFT_REGISTRY := image-registry.openshift-image-registry.svc:5000
 
 #
 # Situations when user wants to override
@@ -155,13 +156,7 @@ codegen:
 	@echo "  Version = \"$(CUSTOM_VERSION)\"" >> $(VERSIONFILE)
 	@echo "" >> $(VERSIONFILE)
 	@echo "  // DefaultRuntimeVersion -- " >> $(VERSIONFILE)
-	@echo "  DefaultRuntimeVersion = \"$(RUNTIME_VERSION)\"" >> $(VERSIONFILE)
-	@echo "" >> $(VERSIONFILE)
-	@echo "  // BuildahVersion -- " >> $(VERSIONFILE)
-	@echo "  BuildahVersion = \"$(BUILDAH_VERSION)\"" >> $(VERSIONFILE)
-	@echo "" >> $(VERSIONFILE)
-	@echo "  // KanikoVersion -- " >> $(VERSIONFILE)
-	@echo "  KanikoVersion = \"$(KANIKO_VERSION)\"" >> $(VERSIONFILE)
+	@echo "  DefaultRuntimeVersion = \"$(DEFAULT_RUNTIME_VERSION)\"" >> $(VERSIONFILE)
 	@echo "" >> $(VERSIONFILE)
 	@echo "  // baseImage -- " >> $(VERSIONFILE)
 	@echo "  baseImage = \"$(BASE_IMAGE)\"" >> $(VERSIONFILE)
@@ -172,11 +167,14 @@ codegen:
 	@echo "  // ImageName -- " >> $(VERSIONFILE)
 	@echo "  ImageName = \"$(CUSTOM_IMAGE)\"" >> $(VERSIONFILE)
 	@echo "" >> $(VERSIONFILE)
+	@echo "  // OpenShiftRegistryAddress -- " >> $(VERSIONFILE)
+	@echo "  OpenShiftRegistryAddress = \"$(OPENSHIFT_REGISTRY)\"" >> $(VERSIONFILE)
+	@echo "" >> $(VERSIONFILE)
 	@echo "  // installDefaultKamelets -- " >> $(VERSIONFILE)
 	@echo "  installDefaultKamelets = $(INSTALL_DEFAULT_KAMELETS)" >> $(VERSIONFILE)
 	@echo ")" >> $(VERSIONFILE)
 	@echo "" >> $(VERSIONFILE)
-	@echo "//GitCommit must be provided during application build" >> $(VERSIONFILE)
+	@echo "// GitCommit must be provided during application build" >> $(VERSIONFILE)
 	@echo "var GitCommit string" >> $(VERSIONFILE)
 	@echo "" >> $(VERSIONFILE)
 
@@ -264,7 +262,7 @@ test-service-binding: do-build
 
 test-local: do-build
 	STAGING_RUNTIME_REPO="$(STAGING_RUNTIME_REPO)" \
-	RUNTIME_VERSION="$(RUNTIME_VERSION)" \
+	DEFAULT_RUNTIME_VERSION="$(DEFAULT_RUNTIME_VERSION)" \
 	go test -timeout 30m -v ./e2e/local -tags=integration $(TEST_LOCAL_RUN) -json 2>&1 | gotestfmt
 
 test-registry-maven-wagon: do-build
@@ -301,7 +299,7 @@ else
 endif
 
 build-resources:
-	./script/get_catalog.sh $(RUNTIME_VERSION) $(STAGING_RUNTIME_REPO)
+	./script/get_catalog.sh $(DEFAULT_RUNTIME_VERSION) $(STAGING_RUNTIME_REPO)
 	go generate ./pkg/...
 
 bundle-kamelets:
@@ -314,6 +312,8 @@ endif
 	./script/bundle_kamelets.sh $(KAMELET_CATALOG_REPO) $(KAMELET_CATALOG_REPO_TAG)
 
 build-compile-integration-tests:
+	@echo "####### Compiling integration tests..."
+	export CAMEL_K_E2E_JUST_COMPILE="true"; \
 	go test -run nope -tags="integration" ./e2e/...
 
 clean:
@@ -333,10 +333,6 @@ clean:
 	rm -rf bundle
 	rm -rf $(INDEX_DIR) $(INDEX_DIR).Dockerfile
 
-dep:
-	@echo "Cleaning dependencies..."
-	go mod tidy
-
 detect-os:
 ifeq '$(findstring ;,$(PATH))' ';'
 OS := Windows
@@ -349,8 +345,6 @@ OS := $(patsubst MINGW%,MSYS,$(OS))
 OS_LOWER := $(shell echo $(OS) | tr '[:upper:]' '[:lower:]')
 endif
 
-dep:
-	go mod tidy
 
 lint:
 	GOGC=$(LINT_GOGC) golangci-lint run --out-format tab --deadline $(LINT_DEADLINE)
@@ -385,8 +379,8 @@ else
 endif
 
 images: build kamel-overlay maven-overlay bundle-kamelets
-ifneq (,$(findstring SNAPSHOT,$(RUNTIME_VERSION)))
-	./script/package_maven_artifacts.sh -s "$(STAGING_RUNTIME_REPO)" -d "$(CAMEL_K_RUNTIME_DIR)" $(RUNTIME_VERSION)
+ifneq (,$(findstring SNAPSHOT,$(DEFAULT_RUNTIME_VERSION)))
+	./script/package_maven_artifacts.sh -s "$(STAGING_RUNTIME_REPO)" -d "$(CAMEL_K_RUNTIME_DIR)" $(DEFAULT_RUNTIME_VERSION)
 endif
 	@echo "####### Building Camel K operator container image..."
 	mkdir -p build/_maven_output
@@ -463,7 +457,7 @@ install-minikube:
 get-staging-repo:
 	@echo $(or ${STAGING_RUNTIME_REPO},https://repository.apache.org/content/repositories/snapshots@id=apache-snapshots@snapshots)
 
-.PHONY: do-build build build-kamel build-resources dep codegen images images-push images-push-staging test check clean release cross-compile package-examples set-version git-tag release-notes check-licenses build-resources release-helm release-staging release-nightly get-staging-repo get-version bundle-kamelets
+.PHONY: do-build build build-kamel build-resources codegen images images-push images-push-staging test check clean release cross-compile package-examples set-version git-tag release-notes check-licenses build-resources release-helm release-staging release-nightly get-staging-repo get-version bundle-kamelets
 .PHONY: controller-gen kubectl kustomize operator-sdk opm
 
 # find or download controller-gen if necessary

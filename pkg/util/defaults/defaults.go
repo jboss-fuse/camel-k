@@ -26,13 +26,7 @@ const (
 	Version = "2.3.0"
 
 	// DefaultRuntimeVersion --
-	DefaultRuntimeVersion = "3.2.0"
-
-	// BuildahVersion --
-	BuildahVersion = "1.14.0"
-
-	// KanikoVersion --
-	KanikoVersion = "0.17.1"
+	DefaultRuntimeVersion = "3.8.1"
 
 	// baseImage --
 	baseImage = "adoptopenjdk/openjdk11:slim"
@@ -42,6 +36,9 @@ const (
 
 	// ImageName --
 	ImageName = "registry-proxy.engineering.redhat.com/rh-osbs/integration-camel-k-rhel8-operator"
+
+	// OpenShiftRegistryAddress --
+	OpenShiftRegistryAddress = "image-registry.openshift-image-registry.svc:5000"
 
 	// installDefaultKamelets --
 	installDefaultKamelets = true
