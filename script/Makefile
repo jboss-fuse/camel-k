@@ -116,7 +116,7 @@ else
 $(warning Could not retrieve a valid Git Commit)
 endif
 
-GOFLAGS = -ldflags "$(GOLDFLAGS)" -trimpath
+#GOFLAGS = -ldflags "$(GOLDFLAGS)" -trimpath
 
 define LICENSE_HEADER
 Licensed to the Apache Software Foundation (ASF) under one or more
@@ -213,7 +213,7 @@ codegen-tools-install: controller-gen
 
 build: codegen build-resources test build-kamel build-compile-integration-tests
 
-ci-build: clean codegen set-version check-licenses dir-licenses build-kamel cross-compile
+ci-build: codegen set-version check-licenses dir-licenses build-kamel cross-compile
 
 do-build: gotestfmt-install
 ifeq ($(DO_TEST_PREBUILD),true)
