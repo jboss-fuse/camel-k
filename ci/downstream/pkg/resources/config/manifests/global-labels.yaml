@@ -14,26 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ---------------------------------------------------------------------------
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-
-# Labels to add to all resources and selectors.
-transformers:
-- global-labels.yaml
-
-resources:
-- ../manager
-- ../crd
-- ../samples
-- ../scorecard
-- ../rbac
-- ../rbac/namespaced
-- ../rbac/openshift
-- ../rbac/openshift/namespaced
-
-patchesStrategicMerge:
-- patch-delete-user-cluster-role.yaml
-images:
-- name: registry-proxy.engineering.redhat.com/rh-osbs/integration-camel-k-rhel8-operator
-  newName: registry-proxy.engineering.redhat.com/rh-osbs/integration-camel-k-rhel8-operator
-  newTag: 2.2.0
+apiVersion: builtin
+kind: LabelTransformer
+metadata:
+  name: global-labels
+labels:
+  app: camel-k
+fieldSpecs:
+- path: metadata/labels
+  create: true

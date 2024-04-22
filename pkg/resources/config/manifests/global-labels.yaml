@@ -14,15 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ---------------------------------------------------------------------------
-
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-
-resources:
-- operator-deployment.yaml
-- operator-service-account.yaml
-
-patchesStrategicMerge:
-- patch-toleration.yaml
-- patch-node-selector.yaml
-- patch-resource-requirements.yaml
+apiVersion: builtin
+kind: LabelTransformer
+metadata:
+  name: global-labels
+labels:
+  app: camel-k
+fieldSpecs:
+- path: metadata/labels
+  create: true

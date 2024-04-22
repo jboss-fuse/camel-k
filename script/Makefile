@@ -49,8 +49,8 @@ LINT_GOGC := 10
 LINT_DEADLINE := 10m
 
 # olm bundle vars
-MANAGER := config/manager
-MANIFESTS := config/manifests
+MANAGER := pkg/resources/config/manager
+MANIFESTS := pkg/resources/config/manifests
 BUNDLE_DIR := bundle
 DEFAULT_CHANNEL ?= $(shell echo "stable-v$(word 1,$(subst ., ,$(lastword $(OPERATOR_VERSION))))")
 CHANNELS ?= $(DEFAULT_CHANNEL),latest
@@ -300,7 +300,6 @@ endif
 
 build-resources:
 	./script/get_catalog.sh $(DEFAULT_RUNTIME_VERSION) $(STAGING_RUNTIME_REPO)
-	go generate ./pkg/...
 
 bundle-kamelets:
 ifneq (,$(findstring release,$(MAKECMDGOALS)))
@@ -522,10 +521,9 @@ $(BUNDLE_CAMEL_APIS): operator-sdk
 	@# Remove the camel directory and re-copy only the required api
 	rm -rf api_$@/camel/* && cp -rf pkg/apis/camel/$@ api_$@/camel/
 	@# operator-sdk generate ... cannot execute across separate modules so need to temporarily move api
-	$(OPERATOR_SDK) generate kustomize manifests --apis-dir $(addprefix api_, $@) -q
 	@# Adds the licence header to the csv file.
-	./script/add_license.sh config/manifests/bases ./script/headers/yaml.txt
-	./script/add_createdAt.sh config/manifests/bases
+	./script/add_license.sh pkg/resources/config/manifests/bases ./script/headers/yaml.txt
+	./script/add_createdAt.sh pkg/resources/config/manifests/bases
 	@# Clean up temporary working api directories
 	rm -rf api_*
 
@@ -558,12 +556,12 @@ pre-bundle:
 
 bundle: set-version generate-crd kustomize operator-sdk pre-bundle $(BUNDLE_CAMEL_APIS)
 	@# Sets the operator image to the preferred image:tag
-	@cd config/manifests && $(KUSTOMIZE) edit set image $(IMAGE_NAME)=$(CUSTOM_IMAGE):$(CUSTOM_VERSION)
+	@cd pkg/resources/config/manifests && $(KUSTOMIZE) edit set image $(IMAGE_NAME)=$(CUSTOM_IMAGE):$(CUSTOM_VERSION)
 	@# Build kustomize manifests
-	@$(KUSTOMIZE) build config/manifests | \
+	@$(KUSTOMIZE) build pkg/resources/config/manifests | \
 		$(OPERATOR_SDK) generate bundle \
 			-q --overwrite --version $(OPERATOR_VERSION) \
-			--kustomize-dir config/manifests $(BUNDLE_METADATA_OPTS)
+			--kustomize-dir pkg/resources/config/manifests $(BUNDLE_METADATA_OPTS)
 	@# Move the dockerfile into the bundle directory
 ifeq ($(shell uname -s 2>/dev/null || echo Unknown),Darwin)
 	@mv bundle.Dockerfile bundle/Dockerfile && sed -i '' 's/bundle\///g' bundle/Dockerfile
