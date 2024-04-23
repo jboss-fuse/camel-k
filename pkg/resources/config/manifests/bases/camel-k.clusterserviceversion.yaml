@@ -31,7 +31,7 @@ metadata:
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
     repository: https://github.com/apache/camel-k
     support: Camel
-  name: camel-k.v2.3.1
+  name: camel-k.vx.y.z
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -169,14 +169,15 @@ spec:
   - name: Camel K source code repository
     url: https://github.com/apache/camel-k
   maintainers:
-  - email: users@camel.apache.org
-    name: The Apache Software Foundation
+  - email: pcongius@redhat.com
+    name: Pasquale Congiusti
   maturity: alpha
-  minKubeVersion: 1.11.0
+  minKubeVersion: 1.14.0
   provider:
-    name: The Apache Software Foundation
-  replaces: camel-k-operator.v2.3.0
+    name: Red Hat
+    url: https://access.redhat.com/products/red-hat-integration
+  replaces: red-hat-camel-k-operator.vX.Y.Z
   selector:
     matchLabels:
       name: camel-k-operator
-  version: 2.3.1
+  version: X.Y.Z
