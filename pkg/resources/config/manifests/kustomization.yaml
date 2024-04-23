@@ -18,8 +18,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 # Labels to add to all resources and selectors.
-commonLabels:
-  app: camel-k
+transformers:
+- global-labels.yaml
 
 resources:
 - ../manager
@@ -37,3 +37,4 @@ images:
 - name: docker.io/apache/camel-k
   newName: docker.io/apache/camel-k
   newTag: 2.3.0-SNAPSHOT
+
