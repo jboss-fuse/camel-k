@@ -23,7 +23,7 @@ nameOverride: ""
 fullnameOverride: ""
 
 operator:
-  image: registry-proxy.engineering.redhat.com/rh-osbs/integration-camel-k-rhel8-operator:1.10.6
+  image: registry-proxy.engineering.redhat.com/rh-osbs/integration-camel-k-rhel8-operator:1.10.7
   global: "false"
   resources: {}
   securityContext: {}
