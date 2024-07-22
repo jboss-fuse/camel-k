@@ -1,0 +1,451 @@
+= Migration Path - Camel K to Camel Quarkus
+
+== Overview
+As Camel K is set to deprecation in favor of an unified Camel approach to openshift, targeting the Red Hat Build of Camel for Quarkus, existing customers should have a migration path to help them migrate their Camel K integrations to CEQ (Red Hat Build of Camel for Quarkus) with the minimum effort, considering the supported features of Camel K and CEQ.
+
+It's important for you to understand the Quarkus way to build, configure, deploy and run applications.
+
+== Assumptions
+* The source files to migrate are in java, xml or yaml.
+* The target system to deploy is an Openshift Cluster 4.15+.
+* Camel K version is 1.10.7.
+* The migration is to CEQ.
+
+Camel K works by having the kamel cli to run the integration and the Camel K Operator operationalizes and materializes as a running pod with some kubernetes objects such as Deployment, Service, Route, ConfigMap, Secret, Knative, etc.
+
+When using CEQ, the starting point is the maven project, that should contain all the artifacts to build and run the integration, there will be the a Deployment, Service, ConfigMap, etc, but they may be materialized in a different way compared to Camel K, for example the properties may be stored in application.properties or the Knative object requires configuration in a different file.
+But the focus is to have the integration route deployed and running to an Openshift Cluster.
+
+== Requirements
+
+To perform the migration, a set of tools and configurations are required.
+
+* Camel Jbang 4.7.0.
+* JDK 21.
+* Maven (mvn cli) 3.9.5.
+* Openshift cluster (optional).
+
+== Out of scope
+
+* Camel Spring Boot as a target. In this case the migration path is similar but should be adjusted to Camel Spring Boot, see the documentation with many examples.
+* Openshift management.
+
+== Use cases
+
+The Camel K integrations may vary, often the integration is composed of a couple of files corresponding to the integration routes and configurations. The integration routes may be java, xml or yaml and the configuration are properties files or parameters set in the kamel run command. This migration document will cover 4 use cases:
+
+* Simple, composed of a single java file with a ConfigMap for configuration and JVM trait.
+* Advanced, composed of 3 files and ConfigMaps, Secrets, traits
+
+
+
+== Versions
+
+For information, Camel K 1.10.7 uses different versions of Camel and Quarkus, compared to CEQ.
+
+.Camel K
+|===
+|Artifact |Version
+
+|JDK
+|11
+
+|Camel
+|3.18.6.redhat-00009
+
+|Camel for Quarkus
+|2.13.3.redhat-00011
+
+|Quarkus Platform
+|2.13.9.SP2-redhat-00003
+
+|Kamelet Catalog
+|1.10.7
+|===
+
+.Camel for Quarkus
+|===
+|Artifact|Version
+
+|JDK
+|21 (preferred), 17 (supported)
+
+|Camel
+|4.4.0.redhat-00025
+
+|Camel for Quarkus
+|3.8.0.redhat-00006
+
+|Quarkus Platform
+|3.8.5.redhat-00003
+
+|Kamelet Catalog
+|2.3.x
+|===
+
+Migrating from Camel K to CEQ will update several libraries at once, then there is a possibility to get some error when building or running the integration in CEQ, due to differences in the underlying libraries.
+
+The kamelets should be updated, since there were many updates since Kamelets 1.10.7, for example you can compare the jms-amqp-10-sink.kamelet.yaml of https://github.com/openshift-integration/kamelet-catalog/blob/kamelet-catalog-1.10/jms-amqp-10-sink.kamelet.yaml[1.10] and https://github.com/openshift-integration/kamelet-catalog/blob/release-2.3.x/jms-amqp-10-sink.kamelet.yaml[2.3]
+
+* rename `flow` to `template` in Kamelet files.
+* rename `property` to `properties` for the bean properties.
+
+== Traits
+
+Traits in Camel K provides an easy way for the operator to materialize parameters from kamel cli to kubernetes objects and configurations. Only a couple of traits are supported in Camel K 1.10, which will be covered in this migration path. There are traits that are an intrinsic part of the Camel K Operator, and there is no need to have the configuration covered in the migration path, like the platform, deployment, dependencies, deployer.
+
+
+best effort: knative-service, knative,
+
+It's show the list of traits and it's parameters and the parameter in CEQ. Note that as CEQ is quarkus based, the properties to set in CEQ should be set in `application.properties`, then once the project is built, the kubernetes manifest in `target/kubernetes/openshift.yml` will contains the properties. You can refer to https://quarkus.io/guides/deploying-to-openshift[Quarkus Openshift Extension] for detailed information about the properties.
+
+
+.Configuration of Camel K traits into CEQ
+|===
+|Camel Trait |CEQ
+
+|*builder*
+
+`builder.properties`
+
+|foo
+
+|*container*
+
+`container.request-cpu`
+
+`container.request-memory`
+
+`container.limit-cpu`
+
+|`quarkus.openshift.resources.requests.cpu`
+
+`quarkus.openshift.resources.requests.memory`
+
+`quarkus.openshift.resources.limits.cpu`
+
+|===
+
+  TODO: Add all supported traits
+
+== Open Questions
+
+none so far.
+
+== Migration Process
+
+The migration process is composed of various steps, they are:
+
+|===
+|Task|Description
+
+|Create the maven project
+|Use the camel-jbang to export the files, it will create a maven project.
+
+|Adjust the configuration
+|Configure the project by adding and changing files.
+
+|Build
+|Building the project will generate the JAR files. Build the container image and push to a container registry.
+
+|Deploy
+|Deploy the kubernetes objects to the Openshift cluster and run the pod.
+|===
+
+
+== Migration Steps
+
+=== Use Case 1 - Simple Integration Route with Configuration
+
+Given the following integration route
+```
+import org.apache.camel.builder.RouteBuilder;
+
+public class Http2Jms extends RouteBuilder {
+  @Override
+  public void configure() throws Exception {
+	rest()
+  	.post("/message")
+  	.id("rest")
+  	.to("direct:jms");
+
+	from("direct:jms")
+  	.log("Sending message to JMS {{broker}}: ${body}")
+	.to("kamelet:jms-amqp-10-sink?remoteURI=amqp://myhost:61616&destinationName=queue");
+	}
+}
+```
+
+The application.properties file
+```
+broker=amqp://172.30.177.216:61616
+queue=qtest
+```
+
+The kamel run command
+```
+kamel run Http2Jms.java -p file://$PWD/http2jms.properties --annotation some_annotation=foo --env MY_ENV1=VAL1
+```
+
+It builds and runs the pod with the annotations, environment variable and the properties file is added as a ConfigMap and mounted in the pod.
+
+
+==== Step 1 - Create the maven project
+
+Use camel jbang to export the file into a full maven project
+
+```
+camel export \
+--runtime=quarkus \
+--quarkus-group-id=com.redhat.quarkus.platform \
+--quarkus-version=3.8.5.redhat-00003 \
+--repos=https://maven.repository.redhat.com/ga \
+--dep=io.quarkus:quarkus-openshift \
+--gav=com.mycompany:app:1.0 \
+--dir=ceq-app1 \
+Http2Jms.java
+```
+
+Description of the parameters:
+
+|===
+|Parameter|Description
+
+|`--runtime=quarkus`
+|Use the Quarkus runtime, the generated project contains the quarkus BOM.
+
+|`--quarkus-group-id=	`
+|The Red Hat supported quarkus platform maven artifact group is `com.redhat.quarkus.platform`.
+
+|`--quarkus-version=3.8.5.redhat-00003`
+|This is the latest supported version at the time, verify the https://access.redhat.com/articles/7040491[Quarkus documentation] if there is a more recent release.
+
+|`--repos=https://maven.repository.redhat.com/ga`
+|Use the Red Hat Maven repository with the GA releases.
+
+|`--dep=io.quarkus:quarkus-openshift`
+|Adds the quarkus-openshift dependency to the pom.xml to be able to build in Openshift.
+
+|`--gav=com.mycompany:app:1.0`
+|Set a GAV to the generated pom.xml, you are should set a GAV accordingly to your project.
+
+|`--dir=ceq-app1`
+|The maven project directory.
+|===
+
+You can see more parameters with `camel export --help`
+
+If you are using kamelets, then it must be part of the maven project, you can download the https://github.com/openshift-integration/kamelet-catalog/blob/release-2.3.x[Kamelet repository] and unzip it. If you have any custom kamelets, add them to this kamelet directory.
+
+Then when using `camel export` you can use the parameter `--local-kamelet-dir=<kamelet directory>>` which will copy all kamelets to `src/main/resources/kamelets` to be later packaged to the final archive.
+
+You can choose to not use the `--local-kamelet-dir=<kamelet directory>>` parameter, then you have to manually copy the desired kamelet yaml files to the aforementioned directory.
+
+=== Step 2 - Configure the project
+
+This the point to configure the maven project and artifacts to suit your environment.
+
+You can try to run the integration route locally with camel jbang to see how it works, before building and deploying to Openshift.
+```
+camel run <file>
+```
+
+Get into the maven project
+```
+cd ceq-app1
+```
+
+Set the `docker` build strategy.
+```
+echo quarkus.openshift.build-strategy=docker >> src/main/resources/application.properties
+```
+
+Change the base image to OpenJDK 21	in `src/main/docker` (optional)
+```
+FROM registry.access.redhat.com/ubi9/openjdk-21:1.20
+```
+
+Change the compiler version to 21 in pom.xml (optional)
+```
+	<maven.compiler.release>21</maven.compiler.release>
+```
+
+Set the environment variables, labels and annotations in `src/main/resources/application.properties` if you need them.
+```
+quarkus.openshift.annotations.sample_annotation=sample_value1
+quarkus.openshift.env.vars.SAMPLE_KEY=sample_value2
+quarkus.openshift.labels.sample_label=sample_value3
+```
+
+If you want to customize the image and container registry settings with these parameters:
+```
+quarkus.container-image.registry
+quarkus.container-image.group
+quarkus.container-image.name
+quarkus.container-image.tag
+```
+
+As there is a `http2jms.properties` with configuration used at runtime, kamel cli creates a ConfigMap and mount it in the pod, we should achieve the same with CEQ.
+
+Create a local ConfigMap manifest file named `ceq-app in `src/main/kubernetes/common.yml` which will be part of the image build process. The following command sets the ConfigMap key as `application.properties`
+```
+oc create configmap ceq-app --from-file application.properties=http2jms.properties --dry-run=client -oyaml > src/main/kubernetes/common.yml
+```
+
+Adds the following property to `application.properties`, for Quarkus to mount the `ConfigMap`.
+```
+quarkus.openshift.app-config-map=ceq-app
+```
+
+=== Step 3 - Build
+
+Build the package for local inspection.
+```
+./mvnw -ntp package
+```
+
+This step will build the maven artifacts (JAR files) locally and generate the Openshift manifest files in `target/kubernetes` directory.
+
+You may want to inspect the `target/kubernetes/openshift.yaml` to understand how it will be deployed to the Openshift cluster.
+
+
+=== Step 4 - Build and Deploy
+
+Build the package and deploy to Openshift
+```
+./mvnw -ntp package -Dquarkus.openshift.deploy=true
+```
+You can follow the image build in the maven output. Soon after build, you can see the pod running.
+
+=== Step 5 - Test
+
+Now verify if the integration route is working.
+
+Follow the pod container log
+```
+kubectl logs -f `kubectl get pod -l app.kubernetes.io/name=app -oname`
+```
+
+It should show something like this output:
+```
+INFO exec -a "java" java -Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager -cp "." -jar /deployments/quarkus-run.jar
+INFO running in /deployments
+__  ____  __  _____   ___  __ ____  ______
+--/ __ \/ / / / _ | / _ \/ //_/ / / / __/
+-/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
+--\___\_\____/_/ |_/_/|_/_/|_|\____/___/
+2024-07-19 16:30:00,129 INFO  [org.apa.cam.qua.cor.CamelBootstrapRecorder] (main) Bootstrap runtime: org.apache.camel.quarkus.main.CamelMainRuntime
+2024-07-19 16:30:00,132 INFO  [org.apa.cam.mai.MainSupport] (main) Apache Camel (Main) 4.4.0.redhat-00025 is starting
+2024-07-19 16:30:00,361 INFO  [org.apa.cam.imp.eng.AbstractCamelContext] (main) Apache Camel 4.4.0.redhat-00025 (camel-1) is starting
+2024-07-19 16:30:00,376 INFO  [org.apa.cam.mai.BaseMainSupport] (main) Property-placeholders summary
+2024-07-19 16:30:00,377 INFO  [org.apa.cam.mai.BaseMainSupport] (main)     [MicroProfilePropertiesSource] broker=amqp://172.30.177.216:61616
+2024-07-19 16:30:00,377 INFO  [org.apa.cam.mai.BaseMainSupport] (main)     [MicroProfilePropertiesSource] queue=qtest
+2024-07-19 16:30:00,377 INFO  [org.apa.cam.mai.BaseMainSupport] (main)     [ms-amqp-10-sink.kamelet.yaml] destinationName=qtest
+2024-07-19 16:30:00,377 INFO  [org.apa.cam.mai.BaseMainSupport] (main)     [ms-amqp-10-sink.kamelet.yaml] connectionFactoryBean=connectionFactoryBean-1
+2024-07-19 16:30:00,378 INFO  [org.apa.cam.mai.BaseMainSupport] (main)     [ms-amqp-10-sink.kamelet.yaml] remoteURI=amqp://172.30.177.216:61616
+2024-07-19 16:30:00,379 INFO  [org.apa.cam.imp.eng.AbstractCamelContext] (main) Routes startup (started:3)
+2024-07-19 16:30:00,379 INFO  [org.apa.cam.imp.eng.AbstractCamelContext] (main)     Started route1 (direct://jms)
+2024-07-19 16:30:00,379 INFO  [org.apa.cam.imp.eng.AbstractCamelContext] (main)     Started rest (rest://post:/message)
+2024-07-19 16:30:00,379 INFO  [org.apa.cam.imp.eng.AbstractCamelContext] (main)     Started jms-amqp-10-sink-1 (kamelet://source)
+2024-07-19 16:30:00,379 INFO  [org.apa.cam.imp.eng.AbstractCamelContext] (main) Apache Camel 4.4.0.redhat-00025 (camel-1) started in 17ms (build:0ms init:0ms start:17ms)
+2024-07-19 16:30:00,471 INFO  [io.quarkus] (main) app 1.0 on JVM (powered by Quarkus 3.8.5.redhat-00004) started in 1.115s. Listening on: http://0.0.0.0:8080
+2024-07-19 16:30:00,472 INFO  [io.quarkus] (main) Profile prod activated.
+2024-07-19 16:30:00,472 INFO  [io.quarkus] (main) Installed features: [camel-amqp, camel-attachments, camel-core, camel-direct, camel-jms, camel-kamelet, camel-microprofile-health, camel-platform-http, camel-rest, camel-rest-openapi, camel-yaml-dsl, cdi, kubernetes, qpid-jms, smallrye-context-propagation, smallrye-health, vertx]
+```
+See the `MicroProfilePropertiesSource` line, it shows the content of the properties file added as a ConfigMap and mounted into the pod.
+
+== Troubleshooting
+
+=== Ignore loading errors when exporting with camel jbang
+
+When using camel jbang export, it may occur failures to load the routes, in this case you can use the `--ignore-loading-error` parameter, as:
+
+```
+camel export --ignore-loading-error <parameters>
+```
+
+== Known Issues
+
+There are a couple of known issues related to migrating the integration routes and their workarounds. Note that the workaround is not a limitation of the CEQ, but only the migration process, once this is done, the resulting maven project is highly customizable to target customer needs.
+
+=== Camel Jbang fails to add the camel-quarkus-direct dependency
+
+If the integration route contains a `rest` and a `direct` endpoint similar to the one below, then check if the pom.xml contains the `camel-quarkus-direct` dependency, otherwise you should add it.
+```
+rest()
+    .post("/message")
+    .id("rest")
+    .to("direct:foo");
+
+from("direct:foo")
+    .log("hello");
+}
+```
+
+The `camel-quarkus-direct` dependency to add to the pom.xml
+```
+<dependency>
+    <groupId>org.apache.camel.quarkus</groupId>
+    <artifactId>camel-quarkus-direct</artifactId>
+</dependency>
+```
+
+=== Quarkus build fails with
+```
+PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+```
+
+The server certificate is not trusted to the client, so you have to either add the server public key to the client or trust the server certificate. In case you are testing, you can add the following property to the `src/main/resources/application.properties` and rebuild it.
+
+```
+quarkus.kubernetes-client.trust-certs=true
+```
+=== Camel Jbang fails to export a route
+
+Camel Jbang fails to export a route when the route contains a kamelet endpoint, which is backed by a bean.
+If the endpoint contains a kamelet, with property placeholders `{{broker}}` and in the kamelet there is a `type: "#class:org.apache.qpid.jms.JmsConnectionFactory"` to initialize the camel component, it may fail.
+```
+from("direct:jms")
+.to("kamelet:jms-amqp-10-sink?remoteURI={{broker}}&destinationName={{queue}}");
+```
+
+The error is composed of the following stacktraces.
+```
+org.apache.camel.RuntimeCamelException: org.apache.camel.VetoCamelContextStartException: Failure creating route from template: jms-amqp-10-sink
+Caused by: org.apache.camel.VetoCamelContextStartException: Failure creating route from template: jms-amqp-10-sink
+Caused by: org.apache.camel.component.kamelet.FailedToCreateKameletException: Error creating or loading Kamelet with id jms-amqp-10-sink (locations: classpath:kamelets,github:apache:camel-kamelets/kamelets)
+Caused by: org.apache.camel.FailedToCreateRouteException: Failed to create route jms-amqp-10-sink-1 at: >>> To[jms:{{destinationType}}:{{destinationName}}?connectionFactory=#bean:{{connectionFactoryBean}}]
+Caused by: org.apache.camel.ResolveEndpointFailedException: Failed to resolve endpoint: jms://Queue:$%7Bqueue%7D?connectionFactory=%23bean%3AconnectionFactoryBean-1 due to: Error binding property (connectionFactory=#bean:connectionFactoryBean-1)
+Caused by: org.apache.camel.PropertyBindingException: Error binding property (connectionFactory=#bean:connectionFactoryBean-1) with name: connectionFactory on bean:
+Caused by: java.lang.IllegalStateException: Cannot create bean: #class:org.apache.qpid.jms.JmsConnectionFactory
+Caused by: org.apache.camel.PropertyBindingException: Error binding property (remoteURI=@@[broker]@@) with name: remoteURI on bean: org.apache.qpid.jms.JmsConnectionFactory@a2b54e3 with value: @@[broker]@@
+Caused by: java.lang.IllegalArgumentException: Invalid remote URI: @@[broker]@@
+Caused by: java.net.URISyntaxException: Illegal character in path at index 2: @@[broker]@@
+```
+
+How to fix:
+
+Replace the property placeholders in the kamelet endpoint {{broker}} and {{queue}} for any value, example
+  `remoteURI=broker&destinationName=queue`, then export the file, then you can add the property placeholder back in the exported route in src/main/ directory.
+
+== Reference documentation
+
+https://access.redhat.com/articles/7021827[Red Hat build of Apache Camel for Quarkus releases]
+
+https://docs.google.com/spreadsheets/d/1aNgEDmpSM9tMEOzBZjiLeQkKWNNN_t_d1b2KwKD0IS4/edit?gid=1302134285#gid=1302134285[Supported components in Camel] (non public)
+
+https://docs.redhat.com/en/documentation/red_hat_build_of_apache_camel/4.4[Camel Quarkus Documentation, including migration to Camel Spring Boot and Camel Quarkus]
+
+https://docs.redhat.com/en/documentation/red_hat_build_of_apache_camel_k/1.10.5[Camel K documentation]
+
+https://docs.redhat.com/en/documentation/red_hat_build_of_apache_camel/4.4/html-single/getting_started_with_red_hat_build_of_apache_camel_for_spring_boot/index#deploying-camel-spring-boot-application-to-openshift[Deploying a Camel Spring Boot application to OpenShift]
+
+https://docs.redhat.com/en/documentation/red_hat_build_of_apache_camel/4.4/html-single/getting_started_with_red_hat_build_of_apache_camel_for_quarkus/index#deploying-quarkus-applications[Deploying Camel Quarkus applications]
+
+https://docs.redhat.com/en/documentation/red_hat_build_of_quarkus/3.8/html/deploying_your_red_hat_build_of_quarkus_applications_to_openshift_container_platform/assembly_quarkus-openshift_quarkus-openshift#assembly_quarkus-openshift_quarkus-openshift[Deploying your Red Hat build of Quarkus applications to OpenShift Container Platform]
+
+https://developers.redhat.com/products/quarkus/download[Developer Resources for Red Hat Build of Quarkus]
+
+https://quarkus.io/guides/deploying-to-kubernetes[Quarkus Configuration for Kubernetes]
+
+https://quarkus.io/guides/deploying-to-openshift[Quarkus Configuration for Openshift]
