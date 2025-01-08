@@ -536,7 +536,7 @@ ifneq ($(origin PACKAGE), undefined)
 BUNDLE_PACKAGE := --package=$(PACKAGE)
 endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL) $(BUNDLE_PACKAGE)
-BUNDLE_METADATA_OPENSHIFT_VERSION ?= $(shell grep com.redhat.openshift.versions script/post_bundle_gen.sh |awk -F= '{print $2}'|sed 's/"//g')
+BUNDLE_METADATA_OPENSHIFT_VERSION ?= $(shell grep com.redhat.openshift.versions script/post_bundle_gen.sh |awk -F= '{print $$2}'|sed 's/"//g')
 
 #
 # Tailor the manifest according to default values for this project
@@ -569,7 +569,7 @@ else
 endif
 	@# Adds the licence headers to the csv file
 	./script/add_license.sh bundle/manifests ./script/headers/yaml.txt
-	@echo "  com.redhat.openshift.versions : $(BUNDLE_METADATA_OPENSHIFT_VERSION)" >> ./bundle/metadata/annotations.yaml
+	@echo "  com.redhat.openshift.versions: $(BUNDLE_METADATA_OPENSHIFT_VERSION)" >> ./bundle/metadata/annotations.yaml
 	$(OPERATOR_SDK) bundle validate ./bundle
 # operator-sdk requires the name of the operator to be the PACKAGE
 # However, the historical name of the operator has the suffix 'operator' so this should
